@@ -1,0 +1,44 @@
+{
+  "name": "ExerciseVideo",
+  "type": "object",
+  "properties": {
+    "exercise_id": {
+      "type": "string",
+      "description": "The exercise ID this video belongs to (e.g. fight_1)"
+    },
+    "survival_state": {
+      "type": "string",
+      "enum": [
+        "fight",
+        "flight",
+        "freeze",
+        "fawn",
+        "safe"
+      ],
+      "description": "The survival state this video is for"
+    },
+    "exercise_title": {
+      "type": "string",
+      "description": "Display name of the exercise"
+    },
+    "video_url": {
+      "type": "string",
+      "description": "URL of the video (uploaded file or YouTube/Vimeo link)"
+    },
+    "video_type": {
+      "type": "string",
+      "enum": [
+        "upload",
+        "youtube",
+        "vimeo"
+      ],
+      "description": "Type of video source"
+    }
+  },
+  "required": [
+    "exercise_id",
+    "survival_state",
+    "video_url",
+    "video_type"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "name": "CheckIn",
+  "type": "object",
+  "properties": {
+    "survival_state": {
+      "type": "string",
+      "enum": [
+        "fight",
+        "flight",
+        "freeze",
+        "fawn",
+        "safe"
+      ],
+      "description": "The survival state identified during check-in"
+    },
+    "pre_score": {
+      "type": "number",
+      "description": "How regulated the user felt before (1-10)"
+    },
+    "post_score": {
+      "type": "number",
+      "description": "How regulated the user felt after (1-10)"
+    },
+    "exercises_completed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of exercise IDs completed"
+    },
+    "reflection": {
+      "type": "string",
+      "description": "Optional reflection note"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "symptoms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of symptom texts the user selected during check-in"
+    }
+  },
+  "required": []
+}

@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
+import { format, startOfWeek, startOfMonth, isAfter, parseISO } from "date-fns";
 import { Plus } from "lucide-react";
 import PatternInsights from "./PatternInsights";
 
@@ -17,102 +17,139 @@ const C = {
 };
 
 const STATE_INFO = {
-  fight:  { label: "Fight",    emoji: "🔥", bg: "#fde8e4", color: "#c97a85" },
-  flight: { label: "Flight",   emoji: "💨", bg: "#fdf0e0", color: "#d4874a" },
-  freeze: { label: "Freeze",   emoji: "🧊", bg: "#e0eaf5", color: "#5a85c4" },
-  fawn:   { label: "Fawn",     emoji: "🫶", bg: "#ede8f8", color: "#9b8ec4" },
-  safe:   { label: "Safe",     emoji: "🌿", bg: "#e0ecdc", color: "#5a8a54" },
+  fight:  { label: "Fight",   emoji: "🔥", bg: "#fde8e4", color: "#c97a85" },
+  flight: { label: "Flight",  emoji: "💨", bg: "#fdf0e0", color: "#d4874a" },
+  freeze: { label: "Freeze",  emoji: "🧊", bg: "#e0eaf5", color: "#5a85c4" },
+  fawn:   { label: "Fawn",    emoji: "🫶", bg: "#ede8f8", color: "#9b8ec4" },
+  safe:   { label: "Safe",    emoji: "🌿", bg: "#e0ecdc", color: "#5a8a54" },
 };
 
-function RegulationBar({ pre, post }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
-      <div style={{ flex: 1 }}>
-        <p style={{ fontSize: 11, color: C.textLight, marginBottom: 4 }}>Before</p>
-        <div style={{ height: 6, background: C.border, borderRadius: 3, overflow: "hidden" }}>
-          <div style={{ height: "100%", background: "#c97a85", borderRadius: 3, width: `${(pre / 10) * 100}%` }} />
-        </div>
-      </div>
-      <span style={{ fontSize: 12, color: C.textLight }}>→</span>
-      <div style={{ flex: 1 }}>
-        <p style={{ fontSize: 11, color: C.textLight, marginBottom: 4 }}>After</p>
-        <div style={{ height: 6, background: C.border, borderRadius: 3, overflow: "hidden" }}>
-          <div style={{ height: "100%", background: C.lavender, borderRadius: 3, width: `${(post / 10) * 100}%` }} />
-        </div>
-      </div>
-    </div>
-  );
+function computeStreak(dates) {
+  if (!dates.length) return 0;
+  const sorted = [...new Set(dates)].sort().reverse();
+  const today = new Date().toISOString().split("T")[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+  if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
+  let streak = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const diff = Math.round((new Date(sorted[i - 1]) - new Date(sorted[i])) / 86400000);
+    if (diff === 1) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function mostUsedState(checkins) {
+  const counts = {};
+  checkins.forEach((c) => { if (c.survival_state) counts[c.survival_state] = (counts[c.survival_state] || 0) + 1; });
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  return top ? STATE_INFO[top[0]] : null;
 }
 
 export default function CheckInHistory({ onNewSession }) {
   const { user } = useAuth();
   const [checkins, setCheckins] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [range, setRange] = useState("month");
 
   useEffect(() => {
     if (!user) return;
     supabase
-      .from('check_ins').select('*').eq('user_id', user.id)
-      .order('created_at', { ascending: false }).limit(30)
+      .from("check_ins").select("*").eq("user_id", user.id)
+      .order("created_at", { ascending: false }).limit(50)
       .then(({ data }) => { setCheckins(data || []); setLoading(false); });
   }, [user]);
 
+  const filtered = useMemo(() => {
+    if (range === "all") return checkins;
+    const cutoff = range === "week"
+      ? startOfWeek(new Date(), { weekStartsOn: 1 })
+      : startOfMonth(new Date());
+    return checkins.filter((c) => c.date && isAfter(parseISO(c.date), cutoff));
+  }, [checkins, range]);
+
   const totalSessions = checkins.length;
-  const scoredCheckins = checkins.filter(c => c.post_score && c.pre_score);
+  const totalExercises = checkins.reduce((sum, c) => sum + (c.exercises_completed?.length || 0), 0);
+  const scoredCheckins = checkins.filter((c) => c.post_score && c.pre_score);
   const avgImprovement = scoredCheckins.length
     ? Math.round(scoredCheckins.reduce((acc, c) => acc + (c.post_score - c.pre_score), 0) / scoredCheckins.length * 10) / 10
     : 0;
+  const streak = computeStreak(checkins.map((c) => c.date).filter(Boolean));
+  const topState = mostUsedState(checkins);
+
+  const stats = [
+    { label: "TOTAL SESSIONS", value: String(totalSessions), sub: "All time",        accent: "#5a3e8a", bg: C.lavenderLight },
+    { label: "TOTAL EXERCISES", value: String(totalExercises), sub: "Completed",     accent: "#2e5a28", bg: "#e0ecdc" },
+    { label: "CURRENT STREAK",  value: streak > 0 ? `${streak} 🔥` : "—", sub: streak > 0 ? "Days in a row" : "Start today", accent: "#d4874a", bg: "#fdf0e0" },
+    { label: "MOST COMMON",     value: topState ? topState.emoji : "—", sub: topState ? topState.label : "No sessions yet", accent: topState ? topState.color : C.textLight, bg: topState ? topState.bg : "#f5f3ef" },
+  ];
 
   return (
     <div style={{ paddingTop: 16 }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: C.text, letterSpacing: "-0.5px", marginBottom: 4 }}>Your journal</h2>
-          <p style={{ fontSize: 13, color: C.textMid }}>{totalSessions} sessions recorded</p>
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: C.text, letterSpacing: "-0.5px", marginBottom: 4 }}>Your Progress</h2>
+          <p style={{ fontSize: 13, color: C.textLight }}>{format(new Date(), "MMMM yyyy")}</p>
         </div>
-        <button
-          onClick={onNewSession}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            background: C.lavenderDark, color: "#fff",
-            border: "none", borderRadius: 12, padding: "10px 16px",
-            fontSize: 13, fontWeight: 700, cursor: "pointer",
-            boxShadow: "0 4px 12px oklch(50% 0.13 295 / 0.25)",
-          }}
-        >
-          <Plus style={{ width: 14, height: 14 }} />
-          New session
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Range filter */}
+          <div style={{ display: "flex", gap: 4, background: "#fff", borderRadius: 20, padding: 4, border: `1px solid ${C.border}` }}>
+            {[["week", "Week"], ["month", "Month"], ["all", "All"]].map(([val, lbl]) => (
+              <button
+                key={val}
+                onClick={() => setRange(val)}
+                style={{
+                  padding: "5px 14px", borderRadius: 16,
+                  fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer",
+                  background: range === val ? C.lavenderDark : "transparent",
+                  color: range === val ? "#fff" : C.textMid,
+                  transition: "all 0.15s",
+                }}
+              >
+                {lbl}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={onNewSession}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: C.lavenderDark, color: "#fff",
+              border: "none", borderRadius: 12, padding: "10px 16px",
+              fontSize: 13, fontWeight: 700, cursor: "pointer",
+              boxShadow: "0 4px 12px oklch(50% 0.13 295 / 0.25)",
+            }}
+          >
+            <Plus style={{ width: 14, height: 14 }} />
+            New session
+          </button>
+        </div>
       </div>
 
-      {/* Stats */}
+      {/* 4 stat cards */}
       {totalSessions > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-          {[
-            { label: "Total sessions", value: String(totalSessions), accent: C.lavenderDark, bg: C.lavenderLight },
-            { label: "Avg. shift", value: avgImprovement > 0 ? `+${avgImprovement}` : String(avgImprovement), accent: "#5a8a54", bg: "#e0ecdc" },
-          ].map((s, i) => (
-            <div key={i} style={{ background: s.bg, borderRadius: 14, padding: "16px", border: `1px solid rgba(0,0,0,0.05)`, textAlign: "center" }}>
-              <p style={{ fontSize: 28, fontWeight: 800, color: s.accent, marginBottom: 4 }}>{s.value}</p>
-              <p style={{ fontSize: 12, color: s.accent, opacity: 0.7 }}>{s.label}</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 24 }}>
+          {stats.map((s, i) => (
+            <div key={i} style={{ background: s.bg, borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(0,0,0,0.05)" }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: s.accent, opacity: 0.7, textTransform: "uppercase", letterSpacing: "0.7px", marginBottom: 6 }}>{s.label}</p>
+              <p style={{ fontSize: 22, fontWeight: 800, color: s.accent, marginBottom: 2 }}>{s.value}</p>
+              <p style={{ fontSize: 11, color: s.accent, opacity: 0.7 }}>{s.sub}</p>
             </div>
           ))}
         </div>
       )}
 
+      {/* Patterns — states + symptoms (uses range filter internally now driven from parent) */}
       {totalSessions > 0 && (
-        <>
-          <h3 style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 14 }}>Patterns & Insights</h3>
-          <PatternInsights checkins={checkins} />
-        </>
+        <PatternInsights checkins={filtered} hideRangePicker />
       )}
 
-      {/* Loading skeletons */}
+      {/* Loading */}
       {loading && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {[1, 2, 3].map((i) => (
-            <div key={i} style={{ background: "#fff", borderRadius: 16, height: 88, border: `1px solid ${C.border}`, opacity: 0.6 }} />
+            <div key={i} style={{ background: "#fff", borderRadius: 14, height: 64, border: `1px solid ${C.border}`, opacity: 0.5 }} />
           ))}
         </div>
       )}
@@ -132,50 +169,61 @@ export default function CheckInHistory({ onNewSession }) {
         </motion.div>
       )}
 
-      {/* Session list */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: totalSessions > 0 ? 20 : 0 }}>
-        {checkins.map((checkin, i) => {
-          const info = STATE_INFO[checkin.survival_state] || {};
-          return (
-            <motion.div
-              key={checkin.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              style={{ background: "#fff", borderRadius: 16, padding: "18px 20px", border: `1px solid ${C.border}`, boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}
-            >
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: info.color || C.textLight, flexShrink: 0, marginTop: 3 }} />
-                  <div>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 6, background: info.bg || "#f0ede8", color: info.color || C.textMid }}>
-                      {info.emoji} {info.label}
-                    </span>
-                    <p style={{ fontSize: 11, color: C.textLight, marginTop: 4 }}>
-                      {checkin.date ? format(new Date(checkin.date), "MMMM d, yyyy") : ""}
-                    </p>
+      {/* Recent sessions — compact list */}
+      {checkins.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 12 }}>Recent sessions</p>
+          <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+            {filtered.slice(0, 8).map((checkin, i) => {
+              const info = STATE_INFO[checkin.survival_state] || {};
+              const shift = (checkin.pre_score && checkin.post_score) ? checkin.post_score - checkin.pre_score : null;
+              return (
+                <motion.div
+                  key={checkin.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.04 }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12,
+                    padding: "12px 18px",
+                    borderBottom: i < filtered.slice(0, 8).length - 1 ? `1px solid ${C.border}` : "none",
+                  }}
+                >
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: info.color || C.textLight, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{info.emoji} {info.label}</span>
+                      <span style={{ fontSize: 11, color: C.textLight }}>·</span>
+                      <span style={{ fontSize: 11, color: C.textLight }}>
+                        {checkin.date ? format(new Date(checkin.date), "MMM d") : ""}
+                      </span>
+                    </div>
+                    {checkin.exercises_completed?.length > 0 && (
+                      <span style={{ fontSize: 11, color: C.textLight }}>
+                        {checkin.exercises_completed.length} exercise{checkin.exercises_completed.length !== 1 ? "s" : ""}
+                      </span>
+                    )}
                   </div>
-                </div>
-                {checkin.exercises_completed?.length > 0 && (
-                  <span style={{ fontSize: 11, color: C.textMid }}>
-                    {checkin.exercises_completed.length} exercise{checkin.exercises_completed.length !== 1 ? "s" : ""}
-                  </span>
-                )}
-              </div>
-
-              {(checkin.pre_score && checkin.post_score) && (
-                <RegulationBar pre={checkin.pre_score} post={checkin.post_score} />
-              )}
-
-              {checkin.reflection && (
-                <p style={{ fontSize: 12, color: C.textMid, marginTop: 12, lineHeight: 1.6, fontStyle: "italic", borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
-                  "{checkin.reflection}"
-                </p>
-              )}
-            </motion.div>
-          );
-        })}
-      </div>
+                  {shift !== null && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
+                      background: shift >= 0 ? "#e0ecdc" : "#fde8e4",
+                      color: shift >= 0 ? "#2e5a28" : "#c97a85",
+                    }}>
+                      {shift >= 0 ? `+${shift}` : shift}
+                    </span>
+                  )}
+                  {checkin.exercises_completed?.length > 0 && (
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 6, background: info.bg || "#f0ede8", color: info.color || C.textMid, flexShrink: 0 }}>
+                      {info.label}
+                    </span>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

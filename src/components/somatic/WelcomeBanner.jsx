@@ -1,5 +1,13 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import logo from "@/assets/somatic-pause-logo.png";
+
+const STATES = [
+  { label: "Fight", emoji: "🔥", state: "fight", sub: "Activated & intense" },
+  { label: "Flight", emoji: "💨", state: "flight", sub: "Anxious & restless" },
+  { label: "Freeze", emoji: "🧊", state: "freeze", sub: "Activated but immobile" },
+  { label: "Shutdown", emoji: "🫶", state: "fawn", sub: "Numb & shut down" },
+];
 
 export default function WelcomeBanner({ onStart, onQuickStart, userName }) {
   return (
@@ -7,53 +15,72 @@ export default function WelcomeBanner({ onStart, onQuickStart, userName }) {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-      className="pt-12">
-
-      {/* Logo */}
-      <div className="flex justify-center mb-10">
-        <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69a6b9ef3db2dbdd4e0eae3c/5b797d937_Somaticpauselogo.png" alt="Somatic Pause" className="mx-1 w-40 h-auto" />
-      </div>
-
-      <div className="text-center mb-14">
-        <h1 className="text-3xl font-light text-[#4A3728] mb-3 tracking-tight leading-tight">
-          {userName ? `Welcome back, ${userName}` : "Welcome back"}
-        </h1>
-        <p className="text-[#9C8878] text-base leading-relaxed max-w-sm mx-auto font-light">
+      className="pt-10"
+    >
+      {/* Mascot + greeting */}
+      <div className="flex flex-col items-center mb-10">
+        <div style={{
+          width: 90, height: 90, borderRadius: '50%', overflow: 'hidden',
+          background: '#f5f3ef', marginBottom: 16,
+          filter: 'drop-shadow(0 4px 16px rgba(155,142,196,0.35))',
+        }}>
+          <img src={logo} alt="Somatic Pause" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 10%' }} />
+        </div>
+        <p style={{ fontSize: 13, color: '#9d97ac', marginBottom: 6, letterSpacing: '0.2px' }}>
           Let's meet your nervous system with compassion.
         </p>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#2d2840', letterSpacing: '-0.5px', textAlign: 'center', lineHeight: 1.25 }}>
+          {userName ? `Welcome back, ${userName}` : "How are you right now?"}
+        </h1>
       </div>
 
-      {/* Quick-start cards */}
-      <p className="text-xs text-center text-[#BEB0A5] font-light mb-3">Know your state? Go straight to practice</p>
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        {[
-        { label: "Fight", emoji: "🔥", state: "fight", sub: "Activated & intense" },
-        { label: "Flight", emoji: "💨", state: "flight", sub: "Anxious & restless" },
-        { label: "Freeze", emoji: "🧊", state: "freeze", sub: "Activated but immobile" },
-        { label: "Shutdown", emoji: "🫶", state: "fawn", sub: "Numb & shut down" }].
-        map((item) =>
-        <button
-          key={item.state}
-          onClick={() => onQuickStart(item.state)}
-          className="bg-white rounded-2xl p-4 text-left shadow-sm border border-[#EDE8E2] hover:border-[#C5A882] hover:shadow-md transition-all duration-200">
-            <div className="text-2xl mb-1">{item.emoji}</div>
-            <p className="text-xs font-semibold text-[#4A3728]">{item.label}</p>
-            <p className="text-xs text-[#9C8878] font-light mt-0.5">{item.sub}</p>
+      {/* Quick-start label */}
+      <p style={{ fontSize: 13, textAlign: 'center', color: '#9d97ac', marginBottom: 14 }}>
+        Know your state? Go straight to practice
+      </p>
+
+      {/* State cards 2×2 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+        {STATES.map((item) => (
+          <button
+            key={item.state}
+            onClick={() => onQuickStart(item.state)}
+            style={{
+              background: '#fff', borderRadius: 16, padding: '20px 22px',
+              border: '1.5px solid #e8e4dc', textAlign: 'left', cursor: 'pointer',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.04)', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#9b8ec4'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(155,142,196,0.18)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e4dc'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)'; }}
+          >
+            <div style={{ fontSize: 26, marginBottom: 10 }}>{item.emoji}</div>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#2d2840', marginBottom: 3 }}>{item.label}</p>
+            <p style={{ fontSize: 12, color: '#6b6480' }}>{item.sub}</p>
           </button>
-        )}
+        ))}
       </div>
 
+      {/* Primary CTA */}
       <button
-        onClick={onStart} className="bg-[#e2e9d3] text-slate-950 py-4 text-sm font-medium tracking-wide rounded-2xl w-full flex items-center justify-center gap-2 hover:bg-[#cfbfde] transition-colors shadow-md">
-
-
+        onClick={onStart}
+        style={{
+          width: '100%', padding: '16px', borderRadius: 14,
+          background: 'oklch(50% 0.13 295)', border: 'none',
+          fontSize: 15, fontWeight: 700, color: '#fff', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          boxShadow: '0 4px 18px oklch(50% 0.13 295 / 0.35)',
+          transition: 'opacity 0.15s',
+        }}
+        onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+      >
         Begin check-in
-        <ArrowRight className="w-4 h-4" />
+        <ArrowRight style={{ width: 16, height: 16 }} />
       </button>
 
-      <p className="text-center text-xs text-[#BEB0A5] mt-5 font-light">
+      <p style={{ textAlign: 'center', fontSize: 12, color: '#9d97ac', marginTop: 16 }}>
         Takes about 5–10 minutes · No experience needed
       </p>
-    </motion.div>);
-
+    </motion.div>
+  );
 }

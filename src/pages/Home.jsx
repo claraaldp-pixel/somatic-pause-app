@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/api/supabaseClient";
+import SomaticLogo from "@/components/somatic/SomaticLogo";
 import { useAuth } from "@/lib/AuthContext";
 import { createPageUrl } from "@/utils";
 import StateSelector from "@/components/somatic/StateSelector";
@@ -43,41 +44,38 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5]">
-      <nav className="flex items-center justify-between px-6 py-5 max-w-5xl mx-auto">
-        <div className="flex items-center gap-2">
-          <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69a6b9ef3db2dbdd4e0eae3c/5b797d937_Somaticpauselogo.png" alt="Somatic Pause" className="w-8 h-8 object-contain" />
-          <span className="text-[#4A3728] font-semibold tracking-wide text-sm">somatic pause</span>
-        </div>
+    <div className="min-h-screen" style={{ background: '#f5f3ef' }}>
+      <nav className="flex items-center justify-between px-6 py-4 max-w-5xl mx-auto">
+        <SomaticLogo size="sm" />
         <div className="flex gap-6 items-center">
           <button
             onClick={() => setPhase("welcome")}
-            className={`text-sm transition-colors ${phase === "welcome" || phase === "checkin" || phase === "exercises" ? "text-[#4A3728] font-medium" : "text-[#9C8878]"}`}
+            style={{ fontSize: 13, fontWeight: phase === "welcome" || phase === "checkin" || phase === "exercises" ? 700 : 500, color: phase === "welcome" || phase === "checkin" || phase === "exercises" ? '#2d2840' : '#9d97ac', transition: 'color 0.15s', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             Practice
           </button>
           <button
             onClick={() => setPhase("history")}
-            className={`text-sm transition-colors ${phase === "history" ? "text-[#4A3728] font-medium" : "text-[#9C8878]"}`}
+            style={{ fontSize: 13, fontWeight: phase === "history" ? 700 : 500, color: phase === "history" ? '#2d2840' : '#9d97ac', transition: 'color 0.15s', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             Journal
           </button>
           <a
             href={createPageUrl("ManageVideos")}
-            className="text-sm text-[#9C8878] hover:text-[#4A3728] transition-colors"
+            style={{ fontSize: 13, color: '#9d97ac', textDecoration: 'none' }}
           >
             Videos
           </a>
           <button
             onClick={logout}
-            className="text-sm text-[#9C8878] hover:text-[#4A3728] transition-colors"
+            style={{ fontSize: 13, color: '#9d97ac', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             Sign out
           </button>
         </div>
       </nav>
 
-      <main className="max-w-2xl mx-auto px-4 pb-20">
+      <main className="max-w-2xl mx-auto px-4 pb-20" style={{ fontFamily: 'Nunito, sans-serif' }}>
         {phase === "welcome" && (
           <WelcomeBanner
             onStart={() => setPhase("checkin")}

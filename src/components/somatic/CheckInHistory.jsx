@@ -6,28 +6,38 @@ import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import PatternInsights from "./PatternInsights";
 
+const C = {
+  lavenderDark: "oklch(50% 0.13 295)",
+  lavenderLight: "#ede8f8",
+  lavender: "oklch(72% 0.1 300)",
+  text: "#2d2840",
+  textMid: "#6b6480",
+  textLight: "#9d97ac",
+  border: "#e8e4dc",
+};
+
 const STATE_INFO = {
-  fight: { label: "Fight", emoji: "🔥", color: "bg-[#F4D4C8]", text: "text-[#8B3A2A]" },
-  flight: { label: "Flight", emoji: "💨", color: "bg-[#FAE8C8]", text: "text-[#7A5A1A]" },
-  freeze: { label: "Freeze", emoji: "🧊", color: "bg-[#D4E4F4]", text: "text-[#1A4A6A]" },
-  fawn: { label: "Fawn", emoji: "🫶", color: "bg-[#E8D4F4]", text: "text-[#4A1A6A]" },
-  safe: { label: "Safe", emoji: "🌿", color: "bg-[#D4EDD4]", text: "text-[#1A5A1A]" },
+  fight:  { label: "Fight",    emoji: "🔥", bg: "#fde8e4", color: "#c97a85" },
+  flight: { label: "Flight",   emoji: "💨", bg: "#fdf0e0", color: "#d4874a" },
+  freeze: { label: "Freeze",   emoji: "🧊", bg: "#e0eaf5", color: "#5a85c4" },
+  fawn:   { label: "Fawn",     emoji: "🫶", bg: "#ede8f8", color: "#9b8ec4" },
+  safe:   { label: "Safe",     emoji: "🌿", bg: "#e0ecdc", color: "#5a8a54" },
 };
 
 function RegulationBar({ pre, post }) {
   return (
-    <div className="flex items-center gap-3 mt-3">
-      <div className="flex-1">
-        <p className="text-xs text-[#BEB0A5] mb-1">Before</p>
-        <div className="h-1.5 bg-[#EDE8E2] rounded-full overflow-hidden">
-          <div className="h-full bg-[#E8B4A0] rounded-full" style={{ width: `${(pre / 10) * 100}%` }} />
+    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
+      <div style={{ flex: 1 }}>
+        <p style={{ fontSize: 11, color: C.textLight, marginBottom: 4 }}>Before</p>
+        <div style={{ height: 6, background: C.border, borderRadius: 3, overflow: "hidden" }}>
+          <div style={{ height: "100%", background: "#c97a85", borderRadius: 3, width: `${(pre / 10) * 100}%` }} />
         </div>
       </div>
-      <div className="text-[#BEB0A5] text-xs">→</div>
-      <div className="flex-1">
-        <p className="text-xs text-[#BEB0A5] mb-1">After</p>
-        <div className="h-1.5 bg-[#EDE8E2] rounded-full overflow-hidden">
-          <div className="h-full bg-[#A8D4A8] rounded-full" style={{ width: `${(post / 10) * 100}%` }} />
+      <span style={{ fontSize: 12, color: C.textLight }}>→</span>
+      <div style={{ flex: 1 }}>
+        <p style={{ fontSize: 11, color: C.textLight, marginBottom: 4 }}>After</p>
+        <div style={{ height: 6, background: C.border, borderRadius: 3, overflow: "hidden" }}>
+          <div style={{ height: "100%", background: C.lavender, borderRadius: 3, width: `${(post / 10) * 100}%` }} />
         </div>
       </div>
     </div>
@@ -42,83 +52,88 @@ export default function CheckInHistory({ onNewSession }) {
   useEffect(() => {
     if (!user) return;
     supabase
-      .from('check_ins')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(30)
-      .then(({ data }) => {
-        setCheckins(data || []);
-        setLoading(false);
-      });
+      .from('check_ins').select('*').eq('user_id', user.id)
+      .order('created_at', { ascending: false }).limit(30)
+      .then(({ data }) => { setCheckins(data || []); setLoading(false); });
   }, [user]);
 
   const totalSessions = checkins.length;
-  const avgImprovement = checkins.length
-    ? Math.round(checkins.filter(c => c.post_score && c.pre_score).reduce((acc, c) => acc + (c.post_score - c.pre_score), 0) / (checkins.filter(c => c.post_score && c.pre_score).length || 1) * 10) / 10
+  const scoredCheckins = checkins.filter(c => c.post_score && c.pre_score);
+  const avgImprovement = scoredCheckins.length
+    ? Math.round(scoredCheckins.reduce((acc, c) => acc + (c.post_score - c.pre_score), 0) / scoredCheckins.length * 10) / 10
     : 0;
 
   return (
-    <div className="pt-4">
-      <div className="flex items-center justify-between mb-8">
+    <div style={{ paddingTop: 16 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
         <div>
-          <h2 className="text-2xl font-light text-[#4A3728]">Your journal</h2>
-          <p className="text-sm text-[#9C8878] font-light mt-1">{totalSessions} sessions recorded</p>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: C.text, letterSpacing: "-0.5px", marginBottom: 4 }}>Your journal</h2>
+          <p style={{ fontSize: 13, color: C.textMid }}>{totalSessions} sessions recorded</p>
         </div>
         <button
           onClick={onNewSession}
-          className="flex items-center gap-1.5 bg-[#e2e9d3] text-black rounded-xl px-4 py-2.5 text-xs font-medium hover:opacity-80 transition-colors"
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: C.lavenderDark, color: "#fff",
+            border: "none", borderRadius: 12, padding: "10px 16px",
+            fontSize: 13, fontWeight: 700, cursor: "pointer",
+            boxShadow: "0 4px 12px oklch(50% 0.13 295 / 0.25)",
+          }}
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus style={{ width: 14, height: 14 }} />
           New session
         </button>
       </div>
 
+      {/* Stats */}
       {totalSessions > 0 && (
-        <>
-          <h3 className="text-sm font-medium text-[#4A3728] mb-4 uppercase tracking-widest">Patterns & Insights</h3>
-          <PatternInsights checkins={checkins} />
-        </>
-      )}
-
-      {totalSessions > 0 && (
-        <div className="grid grid-cols-2 gap-3 mb-8">
-          <div className="bg-white rounded-2xl p-4 border border-[#EDE8E2] shadow-sm text-center">
-            <p className="text-2xl font-light text-[#4A3728]">{totalSessions}</p>
-            <p className="text-xs text-[#9C8878] font-light mt-1">Total sessions</p>
-          </div>
-          <div className="bg-white rounded-2xl p-4 border border-[#EDE8E2] shadow-sm text-center">
-            <p className="text-2xl font-light text-[#4A3728]">
-              {avgImprovement > 0 ? `+${avgImprovement}` : avgImprovement}
-            </p>
-            <p className="text-xs text-[#9C8878] font-light mt-1">Avg. shift</p>
-          </div>
-        </div>
-      )}
-
-      {loading && (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-2xl p-5 border border-[#EDE8E2] animate-pulse h-24" />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
+          {[
+            { label: "Total sessions", value: String(totalSessions), accent: C.lavenderDark, bg: C.lavenderLight },
+            { label: "Avg. shift", value: avgImprovement > 0 ? `+${avgImprovement}` : String(avgImprovement), accent: "#5a8a54", bg: "#e0ecdc" },
+          ].map((s, i) => (
+            <div key={i} style={{ background: s.bg, borderRadius: 14, padding: "16px", border: `1px solid rgba(0,0,0,0.05)`, textAlign: "center" }}>
+              <p style={{ fontSize: 28, fontWeight: 800, color: s.accent, marginBottom: 4 }}>{s.value}</p>
+              <p style={{ fontSize: 12, color: s.accent, opacity: 0.7 }}>{s.label}</p>
+            </div>
           ))}
         </div>
       )}
 
+      {totalSessions > 0 && (
+        <>
+          <h3 style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 14 }}>Patterns & Insights</h3>
+          <PatternInsights checkins={checkins} />
+        </>
+      )}
+
+      {/* Loading skeletons */}
+      {loading && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ background: "#fff", borderRadius: 16, height: 88, border: `1px solid ${C.border}`, opacity: 0.6 }} />
+          ))}
+        </div>
+      )}
+
+      {/* Empty state */}
       {!loading && checkins.length === 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
-          <div className="text-4xl mb-4">🌱</div>
-          <h3 className="text-lg font-light text-[#4A3728] mb-2">No sessions yet</h3>
-          <p className="text-sm text-[#9C8878] font-light mb-6">Your healing journey starts with one breath.</p>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", paddingTop: 64 }}>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>🌱</div>
+          <h3 style={{ fontSize: 20, fontWeight: 300, color: C.text, marginBottom: 8 }}>No sessions yet</h3>
+          <p style={{ fontSize: 14, color: C.textMid, marginBottom: 28, lineHeight: 1.6 }}>Your healing journey starts with one breath.</p>
           <button
             onClick={onNewSession}
-            className="bg-[#e2e9d3] text-black rounded-2xl px-6 py-3 text-sm font-medium hover:opacity-80 transition-colors"
+            style={{ background: C.lavenderDark, color: "#fff", border: "none", borderRadius: 14, padding: "14px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 16px oklch(50% 0.13 295 / 0.3)" }}
           >
             Begin your first session
           </button>
         </motion.div>
       )}
 
-      <div className="space-y-3">
+      {/* Session list */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: totalSessions > 0 ? 20 : 0 }}>
         {checkins.map((checkin, i) => {
           const info = STATE_INFO[checkin.survival_state] || {};
           return (
@@ -127,22 +142,22 @@ export default function CheckInHistory({ onNewSession }) {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="bg-white rounded-2xl p-5 border border-[#EDE8E2] shadow-sm"
+              style={{ background: "#fff", borderRadius: 16, padding: "18px 20px", border: `1px solid ${C.border}`, boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">{info.emoji}</span>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: info.color || C.textLight, flexShrink: 0, marginTop: 3 }} />
                   <div>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${info.color} ${info.text}`}>
-                      {info.label}
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 6, background: info.bg || "#f0ede8", color: info.color || C.textMid }}>
+                      {info.emoji} {info.label}
                     </span>
-                    <p className="text-xs text-[#BEB0A5] mt-1">
+                    <p style={{ fontSize: 11, color: C.textLight, marginTop: 4 }}>
                       {checkin.date ? format(new Date(checkin.date), "MMMM d, yyyy") : ""}
                     </p>
                   </div>
                 </div>
                 {checkin.exercises_completed?.length > 0 && (
-                  <span className="text-xs text-[#9C8878] font-light">
+                  <span style={{ fontSize: 11, color: C.textMid }}>
                     {checkin.exercises_completed.length} exercise{checkin.exercises_completed.length !== 1 ? "s" : ""}
                   </span>
                 )}
@@ -153,7 +168,7 @@ export default function CheckInHistory({ onNewSession }) {
               )}
 
               {checkin.reflection && (
-                <p className="text-xs text-[#9C8878] font-light mt-3 leading-relaxed italic border-t border-[#EDE8E2] pt-3">
+                <p style={{ fontSize: 12, color: C.textMid, marginTop: 12, lineHeight: 1.6, fontStyle: "italic", borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
                   "{checkin.reflection}"
                 </p>
               )}

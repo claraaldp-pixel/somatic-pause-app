@@ -1,4 +1,4 @@
-import logo from "@/assets/somatic-pause-logo.png";
+import hedgehog from "@/assets/hedgehog-mascot.png";
 
 const sizes = {
   sm: { img: 36, fontSize: '11px', gap: '10px', pl: '10px' },
@@ -17,7 +17,7 @@ export default function SomaticLogo({ size = 'md' }) {
         filter: 'drop-shadow(0 4px 12px rgba(155,142,196,0.3))',
       }}>
         <img
-          src={logo}
+          src={hedgehog}
           alt="Somatic Pause"
           style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 12%' }}
         />

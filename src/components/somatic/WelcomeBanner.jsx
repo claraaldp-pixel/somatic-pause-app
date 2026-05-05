@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import logo from "@/assets/somatic-pause-logo.png";
+import hedgehog from "@/assets/hedgehog-mascot.png";
 
 const STATES = [
   { label: "Fight", emoji: "🔥", state: "fight", sub: "Activated & intense" },
@@ -24,7 +24,7 @@ export default function WelcomeBanner({ onStart, onQuickStart, userName }) {
           background: '#f5f3ef', marginBottom: 16,
           filter: 'drop-shadow(0 4px 16px rgba(155,142,196,0.35))',
         }}>
-          <img src={logo} alt="Somatic Pause" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 10%' }} />
+          <img src={hedgehog} alt="Somatic Pause" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 10%' }} />
         </div>
         <p style={{ fontSize: 13, color: '#9d97ac', marginBottom: 6, letterSpacing: '0.2px' }}>
           Let's meet your nervous system with compassion.

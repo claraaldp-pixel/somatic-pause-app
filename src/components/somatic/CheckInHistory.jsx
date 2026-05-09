@@ -87,7 +87,7 @@ export default function CheckInHistory({ onNewSession }) {
   return (
     <div style={{ paddingTop: 16 }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4" style={{ marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: 26, fontWeight: 800, color: C.text, letterSpacing: "-0.5px", marginBottom: 4 }}>Your Progress</h2>
           <p style={{ fontSize: 13, color: C.textLight }}>{format(new Date(), "MMMM yyyy")}</p>

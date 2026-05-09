@@ -20,7 +20,7 @@ const STATE_INFO = {
   fight:  { label: "Fight",   emoji: "🔥", bg: "#fde8e4", color: "#c97a85" },
   flight: { label: "Flight",  emoji: "💨", bg: "#fdf0e0", color: "#d4874a" },
   freeze: { label: "Freeze",  emoji: "🧊", bg: "#e0eaf5", color: "#5a85c4" },
-  fawn:   { label: "Fawn",    emoji: "🫶", bg: "#ede8f8", color: "#9b8ec4" },
+  fawn:   { label: "Shutdown", emoji: "🫶", bg: "#ede8f8", color: "#9b8ec4" },
   safe:   { label: "Safe",    emoji: "🌿", bg: "#e0ecdc", color: "#5a8a54" },
 };
 

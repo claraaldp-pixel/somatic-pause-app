@@ -477,55 +477,55 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
           </div>
         </div>
 
-        {/* Right: steps + hedgehog + buttons */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: "20px", border: `1px solid ${C.border}`, boxShadow: "0 1px 6px rgba(0,0,0,0.04)", flex: 1, overflowY: "auto" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 14 }}>How it works</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {steps.map((s, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 12px",
-                    borderRadius: 12, background: i === step ? C.lavenderLight : "transparent",
-                    transition: "background 0.3s ease",
-                  }}
-                >
-                  <div style={{
-                    width: 26, height: 26, borderRadius: "50%", flexShrink: 0, marginTop: 1,
-                    background: i < step ? C.lavender : i === step ? C.lavenderDark : "#f0ede8",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 11, fontWeight: 700,
-                    transition: "background 0.3s ease",
-                  }}>
-                    {i < step
-                      ? <Check style={{ width: 12, height: 12, color: "#fff" }} />
-                      : <span style={{ color: i === step ? "#fff" : C.textLight }}>{i + 1}</span>
-                    }
-                  </div>
-                  <p style={{ fontSize: 13, color: i === step ? C.text : C.textMid, lineHeight: 1.55, marginTop: 3, fontWeight: i === step ? 600 : 400 }}>{s}</p>
+        {/* Right: steps card only — hedgehog + buttons sit below the grid */}
+        <div style={{ background: "#fff", borderRadius: 16, padding: "20px", border: `1px solid ${C.border}`, boxShadow: "0 1px 6px rgba(0,0,0,0.04)", overflowY: "auto" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 14 }}>How it works</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {steps.map((s, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 12px",
+                  borderRadius: 12, background: i === step ? C.lavenderLight : "transparent",
+                  transition: "background 0.3s ease",
+                }}
+              >
+                <div style={{
+                  width: 26, height: 26, borderRadius: "50%", flexShrink: 0, marginTop: 1,
+                  background: i < step ? C.lavender : i === step ? C.lavenderDark : "#f0ede8",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 11, fontWeight: 700,
+                  transition: "background 0.3s ease",
+                }}>
+                  {i < step
+                    ? <Check style={{ width: 12, height: 12, color: "#fff" }} />
+                    : <span style={{ color: i === step ? "#fff" : C.textLight }}>{i + 1}</span>
+                  }
                 </div>
-              ))}
-            </div>
+                <p style={{ fontSize: 13, color: i === step ? C.text : C.textMid, lineHeight: 1.55, marginTop: 3, fontWeight: i === step ? 600 : 400 }}>{s}</p>
+              </div>
+            ))}
           </div>
+        </div>
+      </div>
 
-          <HedgehogTip text="Follow each step at your own pace. Your nervous system is listening." />
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+        <HedgehogTip text="Follow each step at your own pace. Your nervous system is listening." />
 
-          <div style={{ display: "flex", gap: 10 }}>
-            <button
-              onClick={onBack}
-              style={{ flex: 1, padding: "13px 16px", borderRadius: 12, background: "#f0ede8", border: "none", fontSize: 13, fontWeight: 700, color: C.textMid, cursor: "pointer" }}
-            >
-              Skip
-            </button>
-            <button
-              onClick={handleNext}
-              style={{ flex: 2, padding: "13px 16px", borderRadius: 12, background: C.lavenderDark, border: "none", fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px oklch(50% 0.13 295 / 0.4)" }}
-            >
-              {step < total - 1 ? "Next step" : "I'm done"}
-              <ChevronRight style={{ width: 16, height: 16 }} />
-            </button>
-          </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={onBack}
+            style={{ flex: 1, padding: "13px 16px", borderRadius: 12, background: "#f0ede8", border: "none", fontSize: 13, fontWeight: 700, color: C.textMid, cursor: "pointer" }}
+          >
+            Skip
+          </button>
+          <button
+            onClick={handleNext}
+            style={{ flex: 2, padding: "13px 16px", borderRadius: 12, background: C.lavenderDark, border: "none", fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px oklch(50% 0.13 295 / 0.4)" }}
+          >
+            {step < total - 1 ? "Next step" : "I'm done"}
+            <ChevronRight style={{ width: 16, height: 16 }} />
+          </button>
         </div>
       </div>
     </motion.div>

@@ -17,7 +17,7 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isAuthenticated, authError } = useAuth();
+  const { isLoadingAuth, isAuthenticated, authError, isPasswordRecovery } = useAuth();
 
   if (isLoadingAuth) {
     return (
@@ -31,7 +31,7 @@ const AuthenticatedApp = () => {
     return <UserNotRegisteredError />;
   }
 
-  if (!isAuthenticated) {
+  if (isPasswordRecovery || !isAuthenticated) {
     return <Login />;
   }
 

@@ -3,12 +3,16 @@ import { supabase } from '@/api/supabaseClient';
 
 const AuthContext = createContext();
 
+const isRecoveryUrl = () =>
+  typeof window !== 'undefined' && window.location.hash.includes('type=recovery');
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const [authError, setAuthError] = useState(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(isRecoveryUrl());
 
   const checkWhitelist = async (supabaseUser) => {
     const { data } = await supabase
@@ -31,19 +35,29 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        checkWhitelist(session.user);
-      } else {
-        setIsLoadingAuth(false);
-        setAuthChecked(true);
-      }
-    });
+    // If this is a recovery redirect, skip getSession — wait for PASSWORD_RECOVERY event
+    if (!isRecoveryUrl()) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          checkWhitelist(session.user);
+        } else {
+          setIsLoadingAuth(false);
+          setAuthChecked(true);
+        }
+      });
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+        setIsAuthenticated(false);
+        setIsLoadingAuth(false);
+        setAuthChecked(true);
+      } else if (event === 'SIGNED_IN') {
+        setIsPasswordRecovery(false);
         checkWhitelist(session.user);
       } else if (event === 'SIGNED_OUT') {
+        setIsPasswordRecovery(false);
         setUser(null);
         setIsAuthenticated(false);
         setAuthError(null);
@@ -79,6 +93,7 @@ export const AuthProvider = ({ children }) => {
       isLoadingPublicSettings: false,
       authChecked,
       authError,
+      isPasswordRecovery,
       logout,
       navigateToLogin: () => {},
       checkUserAuth,

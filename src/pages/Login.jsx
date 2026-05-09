@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/api/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import SomaticLogo from "@/components/somatic/SomaticLogo";
 
@@ -20,20 +21,13 @@ const btnStyle = (disabled) => ({
 });
 
 export default function Login() {
+  const { isPasswordRecovery } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [step, setStep] = useState('login'); // login | forgot | forgot-sent | set-password
+  const [step, setStep] = useState(isPasswordRecovery ? 'set-password' : 'login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Detect password-recovery token in URL (from reset email link)
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setStep('set-password');
-    });
-    return () => subscription.unsubscribe();
-  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();

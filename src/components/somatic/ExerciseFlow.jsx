@@ -30,6 +30,45 @@ const C = {
   border:       "#e8e4dc",
 };
 
+function VideoPlayer({ src }) {
+  const ref = useRef(null);
+  const [playing, setPlaying] = useState(true);
+
+  const toggle = () => {
+    if (!ref.current) return;
+    playing ? ref.current.pause() : ref.current.play();
+    setPlaying(!playing);
+  };
+
+  return (
+    <div style={{ position: "relative", lineHeight: 0 }}>
+      <video
+        ref={ref}
+        src={src}
+        autoPlay
+        loop
+        muted
+        playsInline
+        style={{ width: "100%", display: "block", aspectRatio: "3/4", objectFit: "cover" }}
+      />
+      <button
+        onClick={toggle}
+        style={{
+          position: "absolute", bottom: 12, right: 12,
+          width: 40, height: 40, borderRadius: "50%",
+          background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)",
+          border: "none", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
+        }}
+      >
+        {playing
+          ? <Pause style={{ width: 18, height: 18 }} />
+          : <Play style={{ width: 18, height: 18 }} />}
+      </button>
+    </div>
+  );
+}
+
 function ExerciseCard({ exercise, onStart, liked, onToggleLike }) {
   const tc = TYPE_COLORS[exercise.type] || TYPE_COLORS.somatic;
   return (
@@ -386,7 +425,7 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
           {video?.video_type === "audio" ? (
             <AudioPlayer src={video.video_url} />
           ) : video ? (
-            <video src={video.video_url} autoPlay loop muted playsInline style={{ width: "100%", display: "block", aspectRatio: "16/9", objectFit: "cover" }} />
+            <VideoPlayer src={video.video_url} />
           ) : (
             <div style={{ padding: "44px 28px 36px", textAlign: "center" }}>
               <div style={{ width: 80, height: 80, borderRadius: "50%", background: C.lavenderLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 40 }}>{exercise.emoji}</div>
@@ -416,14 +455,7 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
           {video?.video_type === "audio" ? (
             <AudioPlayer src={video.video_url} />
           ) : video ? (
-            <video
-              src={video.video_url}
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{ width: "100%", display: "block", aspectRatio: "16/9", objectFit: "cover" }}
-            />
+            <VideoPlayer src={video.video_url} />
           ) : (
             <div style={{ padding: "44px 28px 36px", textAlign: "center" }}>
               <div style={{ width: 80, height: 80, borderRadius: "50%", background: C.lavenderLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 40 }}>

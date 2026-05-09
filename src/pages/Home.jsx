@@ -82,7 +82,7 @@ export default function Home() {
           </button>
         </div>
 
-        <main style={{ maxWidth: 680, margin: "0 auto", padding: "40px 32px 80px" }}>
+        <main className="px-4 sm:px-8" style={{ maxWidth: 680, margin: "0 auto", paddingTop: 40, paddingBottom: 80 }}>
           {phase === "welcome" && (
             <WelcomeBanner
               onStart={() => setPhase("checkin")}

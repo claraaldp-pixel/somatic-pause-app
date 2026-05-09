@@ -129,7 +129,7 @@ export default function CheckInHistory({ onNewSession }) {
 
       {/* 4 stat cards */}
       {totalSessions > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 24 }}>
+        <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: 10, marginBottom: 24 }}>
           {stats.map((s, i) => (
             <div key={i} style={{ background: s.bg, borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(0,0,0,0.05)" }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: s.accent, opacity: 0.7, textTransform: "uppercase", letterSpacing: "0.7px", marginBottom: 6 }}>{s.label}</p>

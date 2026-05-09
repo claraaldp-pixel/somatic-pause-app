@@ -366,7 +366,9 @@ function AudioPlayer({ src }) {
 function ExerciseGuide({ exercise, onComplete, onBack, video }) {
   const [step, setStep] = useState(0);
   const [allDone, setAllDone] = useState(false);
-  const total = exercise.steps.length;
+  const steps = exercise.steps || [];
+  const total = steps.length;
+  const audioOnly = total === 0;
 
   const handleNext = () => {
     if (step < total - 1) setStep((s) => s + 1);
@@ -374,6 +376,35 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
   };
 
   if (allDone) return <CompletionScreen onComplete={onComplete} />;
+
+  // Audio-only mode: no written steps, just the media player
+  if (audioOnly) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <GuideHeader exercise={exercise} onBack={onBack} dotsCount={1} dotsFilled={0} />
+        <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", border: `1px solid ${C.border}`, boxShadow: "0 1px 8px rgba(0,0,0,0.04)", marginBottom: 16 }}>
+          {video?.video_type === "audio" ? (
+            <AudioPlayer src={video.video_url} />
+          ) : video ? (
+            <video src={video.video_url} autoPlay loop muted playsInline style={{ width: "100%", display: "block", aspectRatio: "16/9", objectFit: "cover" }} />
+          ) : (
+            <div style={{ padding: "44px 28px 36px", textAlign: "center" }}>
+              <div style={{ width: 80, height: 80, borderRadius: "50%", background: C.lavenderLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 40 }}>{exercise.emoji}</div>
+              <h3 style={{ fontSize: 17, fontWeight: 700, color: C.text, marginBottom: 8 }}>{exercise.title}</h3>
+              <p style={{ fontSize: 13, color: C.textMid, lineHeight: 1.65 }}>{exercise.description}</p>
+            </div>
+          )}
+        </div>
+        <HedgehogTip text="Take your time. Let the audio guide you at your own pace." />
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button onClick={onBack} style={{ flex: 1, padding: "13px 16px", borderRadius: 12, background: "#f0ede8", border: "none", fontSize: 13, fontWeight: 700, color: C.textMid, cursor: "pointer" }}>Skip</button>
+          <button onClick={() => setAllDone(true)} style={{ flex: 2, padding: "13px 16px", borderRadius: 12, background: C.lavenderDark, border: "none", fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px oklch(50% 0.13 295 / 0.4)" }}>
+            I'm done <ChevronRight style={{ width: 16, height: 16 }} />
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -419,7 +450,7 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
           <div style={{ background: "#fff", borderRadius: 16, padding: "20px", border: `1px solid ${C.border}`, boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 14 }}>How it works</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {exercise.steps.map((s, i) => (
+              {steps.map((s, i) => (
                 <div
                   key={i}
                   style={{

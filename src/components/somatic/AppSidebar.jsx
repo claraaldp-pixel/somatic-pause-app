@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
-import { createPageUrl } from "@/utils";
 import SomaticLogo from "@/components/somatic/SomaticLogo";
 
 function computeStreak(dates) {
@@ -25,7 +24,7 @@ const NAV = [
   { icon: "📈", label: "Progress",  phase: "history",  activeFor: ["history"] },
 ];
 
-export default function AppSidebar({ phase, setPhase, onLogout }) {
+export default function AppSidebar({ phase, setPhase, onLogout, isOpen }) {
   const { user } = useAuth();
   const [streak, setStreak] = useState(0);
 
@@ -36,13 +35,20 @@ export default function AppSidebar({ phase, setPhase, onLogout }) {
   }, [user]);
 
   return (
-    <div style={{
-      width: 220, flexShrink: 0,
-      background: "#fff", borderRight: "1px solid #e8e4dc",
-      display: "flex", flexDirection: "column",
-      padding: "28px 20px",
-      position: "sticky", top: 0, height: "100vh", overflowY: "auto",
-    }}>
+    <div
+      className={`
+        fixed md:sticky top-0 h-screen z-[100] md:z-auto
+        transition-transform duration-300 md:transition-none
+        ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+      `}
+      style={{
+        width: 220, flexShrink: 0,
+        background: "#fff", borderRight: "1px solid #e8e4dc",
+        display: "flex", flexDirection: "column",
+        padding: "28px 20px",
+        overflowY: "auto",
+      }}
+    >
       {/* Logo */}
       <div style={{ marginBottom: 36 }}>
         <SomaticLogo size="sm" />
@@ -71,19 +77,6 @@ export default function AppSidebar({ phase, setPhase, onLogout }) {
             </button>
           );
         })}
-
-        <a
-          href={createPageUrl("ManageVideos")}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: "10px 12px", borderRadius: 10,
-            fontSize: 14, fontWeight: 600, color: "#8b849a",
-            textDecoration: "none", transition: "all 0.15s",
-          }}
-        >
-          <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>🎥</span>
-          Videos
-        </a>
 
         <button
           onClick={onLogout}

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
-import { createPageUrl } from "@/utils";
 import StateSelector from "@/components/somatic/StateSelector";
 import ExerciseFlow from "@/components/somatic/ExerciseFlow";
 import CheckInHistory from "@/components/somatic/CheckInHistory";
@@ -14,6 +13,12 @@ export default function Home() {
   const [selectedState, setSelectedState] = useState(null);
   const [preScore, setPreScore] = useState(5);
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
+  const [navOpen, setNavOpen] = useState(false);
+
+  const handleSetPhase = (p) => {
+    setPhase(p);
+    setNavOpen(false);
+  };
 
   const handleStateSelected = (state, score, symptoms = []) => {
     setSelectedState(state);
@@ -45,9 +50,38 @@ export default function Home() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f5f3ef" }}>
-      <AppSidebar phase={phase} setPhase={setPhase} onLogout={logout} />
+      {/* Mobile backdrop */}
+      {navOpen && (
+        <div
+          className="md:hidden"
+          onClick={() => setNavOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 99 }}
+        />
+      )}
 
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <AppSidebar phase={phase} setPhase={handleSetPhase} onLogout={logout} isOpen={navOpen} />
+
+      <div style={{ flex: 1, overflowY: "auto", minWidth: 0 }}>
+        {/* Mobile top bar */}
+        <div
+          className="md:hidden"
+          style={{
+            position: "sticky", top: 0, zIndex: 50,
+            background: "#fff", borderBottom: "1px solid #e8e4dc",
+            display: "flex", alignItems: "center", padding: "0 20px", height: 52,
+          }}
+        >
+          <button
+            onClick={() => setNavOpen(true)}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              padding: "6px 8px", borderRadius: 8, color: "#6b6480", fontSize: 20, lineHeight: 1,
+            }}
+          >
+            ☰
+          </button>
+        </div>
+
         <main style={{ maxWidth: 680, margin: "0 auto", padding: "40px 32px 80px" }}>
           {phase === "welcome" && (
             <WelcomeBanner

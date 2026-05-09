@@ -16,8 +16,8 @@ const C = {
 const STATE_INFO = {
   fight:  { label: "Fight",    emoji: "🔥", tagline: "Activated & intense",     color: "from-[#fde8e4] to-[#f8d0c8]",  border: "border-[#e8b4a0]", text: "text-[#c97a85]", sentence: "I have to do something.", scoreMin: "Calm", scoreMax: "Overactivated" },
   flight: { label: "Flight",   emoji: "💨", tagline: "Anxious & restless",       color: "from-[#fdf0e0] to-[#f8dca8]",  border: "border-[#e8c880]", text: "text-[#d4874a]", sentence: "I can't slow down.",       scoreMin: "Present", scoreMax: "Rushed" },
-  freeze: { label: "Dorsal / Shutdown", emoji: "🧊", tagline: "Numb & shut down", color: "from-[#e0eaf5] to-[#c0d8f0]", border: "border-[#a8c8e8]", text: "text-[#5a85c4]", sentence: "It's too much.",           scoreMin: "Present", scoreMax: "Withdrawn" },
-  fawn:   { label: "Blended / Fawn",   emoji: "🫶", tagline: "Activated but immobile", color: "from-[#ede8f8] to-[#d8cef0]", border: "border-[#c8a8e8]", text: "text-[#9b8ec4]", sentence: "I need to keep them okay.", scoreMin: "Connected", scoreMax: "Emotionally absent" },
+  freeze: { label: "Freeze",    emoji: "🧊", tagline: "Stuck & overwhelmed",   color: "from-[#e0eaf5] to-[#c0d8f0]", border: "border-[#a8c8e8]", text: "text-[#5a85c4]", sentence: "I know I need to act but I can't.", scoreMin: "Present", scoreMax: "Overwhelmed" },
+  fawn:   { label: "Shutdown",  emoji: "🫥", tagline: "Empty & disconnected",   color: "from-[#ede8f8] to-[#d8cef0]", border: "border-[#c8a8e8]", text: "text-[#9b8ec4]", sentence: "I can't feel anything right now.", scoreMin: "Connected", scoreMax: "Disconnected" },
   safe:   { label: "Ventral / Safe",   emoji: "🌿", tagline: "Present & connected",    color: "from-[#e0ecdc] to-[#c0dcc0]", border: "border-[#a8d4a8]", text: "text-[#5a8a54]", sentence: "I feel grounded and present.", scoreMin: "Calm", scoreMax: "Overwhelmed" },
 };
 

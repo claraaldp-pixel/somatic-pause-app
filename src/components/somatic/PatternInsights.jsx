@@ -13,11 +13,11 @@ const C = {
 };
 
 const STATE_INFO = {
-  fight:  { label: "Fight",   emoji: "🔥", bar: "#e8a090", tag: { bg: "#fde8e4", color: "#c97a85" } },
-  flight: { label: "Flight",  emoji: "💨", bar: "#f0ca88", tag: { bg: "#fdf0e0", color: "#d4874a" } },
-  freeze: { label: "Dorsal",  emoji: "🧊", bar: "#a8c8e8", tag: { bg: "#e0eaf5", color: "#5a85c4" } },
-  fawn:   { label: "Blended", emoji: "🫶", bar: "#c8a8e8", tag: { bg: "#ede8f8", color: "#9b8ec4" } },
-  safe:   { label: "Safe",    emoji: "🌿", bar: "#a8d4a8", tag: { bg: "#e0ecdc", color: "#5a8a54" } },
+  fight:  { label: "Fight",    emoji: "🔥", bar: "#e8a090", tag: { bg: "#fde8e4", color: "#c97a85" } },
+  flight: { label: "Flight",   emoji: "💨", bar: "#f0ca88", tag: { bg: "#fdf0e0", color: "#d4874a" } },
+  freeze: { label: "Freeze",   emoji: "🧊", bar: "#a8c8e8", tag: { bg: "#e0eaf5", color: "#5a85c4" } },
+  fawn:   { label: "Shutdown", emoji: "🫶", bar: "#c8a8e8", tag: { bg: "#ede8f8", color: "#9b8ec4" } },
+  safe:   { label: "Safe",     emoji: "🌿", bar: "#a8d4a8", tag: { bg: "#e0ecdc", color: "#5a8a54" } },
 };
 
 // When hideRangePicker=true, checkins are already pre-filtered by parent

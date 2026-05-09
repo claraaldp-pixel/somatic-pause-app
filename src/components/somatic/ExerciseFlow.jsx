@@ -41,7 +41,7 @@ function VideoPlayer({ src }) {
   };
 
   return (
-    <div style={{ position: "relative", lineHeight: 0 }}>
+    <div style={{ position: "relative", paddingBottom: "133.33%" }}>
       <video
         ref={ref}
         src={src}
@@ -49,7 +49,7 @@ function VideoPlayer({ src }) {
         loop
         muted
         playsInline
-        style={{ width: "100%", display: "block", aspectRatio: "3/4", objectFit: "cover" }}
+        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }}
       />
       <button
         onClick={toggle}
@@ -449,7 +449,7 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <GuideHeader exercise={exercise} onBack={onBack} dotsCount={total} dotsFilled={step} />
 
-      <div className="grid md:grid-cols-2 gap-5 items-start">
+      <div className="grid md:grid-cols-2 gap-5 items-stretch">
         {/* Left: audio / video / placeholder */}
         <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", border: `1px solid ${C.border}`, boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}>
           {video?.video_type === "audio" ? (
@@ -479,7 +479,7 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
 
         {/* Right: steps + hedgehog + buttons */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: "20px", border: `1px solid ${C.border}`, boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "20px", border: `1px solid ${C.border}`, boxShadow: "0 1px 6px rgba(0,0,0,0.04)", flex: 1, overflowY: "auto" }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 14 }}>How it works</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {steps.map((s, i) => (

@@ -23,9 +23,10 @@ const NAV = [
   { icon: "🧘", label: "Exercises",   phase: "checkin",    activeFor: ["checkin", "exercises"] },
   { icon: "❤️", label: "Favourites",  phase: "favourites", activeFor: ["favourites"] },
   { icon: "📈", label: "Progress",    phase: "history",    activeFor: ["history"] },
+  { icon: "⚙️", label: "Settings",    phase: "settings",   activeFor: ["settings"] },
 ];
 
-export default function AppSidebar({ phase, setPhase, onLogout, isOpen }) {
+export default function AppSidebar({ phase, setPhase, isOpen }) {
   const { user } = useAuth();
   const [streak, setStreak] = useState(0);
 
@@ -79,19 +80,6 @@ export default function AppSidebar({ phase, setPhase, onLogout, isOpen }) {
           );
         })}
 
-        <button
-          onClick={onLogout}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: "10px 12px", borderRadius: 10,
-            fontSize: 14, fontWeight: 600, color: "#8b849a",
-            background: "transparent", border: "none", cursor: "pointer",
-            textAlign: "left", width: "100%", transition: "all 0.15s",
-          }}
-        >
-          <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>↩</span>
-          Sign out
-        </button>
       </div>
 
       {/* Streak card */}

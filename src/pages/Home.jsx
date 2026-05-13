@@ -6,6 +6,7 @@ import ExerciseFlow from "@/components/somatic/ExerciseFlow";
 import CheckInHistory from "@/components/somatic/CheckInHistory";
 import WelcomeBanner from "@/components/somatic/WelcomeBanner";
 import Favourites from "@/components/somatic/Favourites";
+import Settings from "@/components/somatic/Settings";
 import AppSidebar from "@/components/somatic/AppSidebar";
 
 export default function Home() {
@@ -100,7 +101,7 @@ export default function Home() {
             <WelcomeBanner
               onStart={() => setPhase("checkin")}
               onQuickStart={handleQuickStart}
-              userName={user?.email?.split("@")[0]}
+              userName={user?.user_metadata?.full_name || user?.email?.split("@")[0]}
             />
           )}
           {phase === "checkin" && (
@@ -119,6 +120,9 @@ export default function Home() {
           )}
           {phase === "favourites" && (
             <Favourites onStartExercise={handleStartFavourite} onBack={() => setPhase("welcome")} />
+          )}
+          {phase === "settings" && (
+            <Settings onBack={() => setPhase("welcome")} />
           )}
         </main>
       </div>

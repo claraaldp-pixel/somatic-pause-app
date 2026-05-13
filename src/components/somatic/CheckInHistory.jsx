@@ -39,11 +39,13 @@ function computeStreak(dates) {
   return streak;
 }
 
-function mostUsedState(checkins) {
-  const counts = {};
+function mostUsedStates(checkins) {
+  const counts = /** @type {Record<string,number>} */ ({});
   checkins.forEach((c) => { if (c.survival_state) counts[c.survival_state] = (counts[c.survival_state] || 0) + 1; });
-  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-  return top ? STATE_INFO[top[0]] : null;
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (!sorted.length) return [];
+  const max = sorted[0][1];
+  return sorted.filter(([, n]) => n === max).map(([state]) => STATE_INFO[/** @type {keyof typeof STATE_INFO} */ (state)]);
 }
 
 export default function CheckInHistory({ onNewSession }) {
@@ -75,13 +77,17 @@ export default function CheckInHistory({ onNewSession }) {
     ? Math.round(scoredCheckins.reduce((acc, c) => acc + (c.post_score - c.pre_score), 0) / scoredCheckins.length * 10) / 10
     : 0;
   const streak = computeStreak(checkins.map((c) => c.date).filter(Boolean));
-  const topState = mostUsedState(checkins);
+  const topStates = mostUsedStates(checkins);
+  const topEmoji = topStates.length ? topStates.map((s) => s.emoji).join(" ") : "—";
+  const topLabel = topStates.length ? topStates.map((s) => s.label).join(" · ") : "No sessions yet";
+  const topAccent = topStates.length === 1 ? topStates[0].color : C.textMid;
+  const topBg = topStates.length === 1 ? topStates[0].bg : "#f5f3ef";
 
   const stats = [
     { label: "TOTAL SESSIONS", value: String(totalSessions), sub: "All time",        accent: "#5a3e8a", bg: C.lavenderLight },
     { label: "TOTAL EXERCISES", value: String(totalExercises), sub: "Completed",     accent: "#2e5a28", bg: "#e0ecdc" },
     { label: "CURRENT STREAK",  value: streak > 0 ? `${streak} 🔥` : "—", sub: streak > 0 ? "Days in a row" : "Start today", accent: "#d4874a", bg: "#fdf0e0" },
-    { label: "MOST COMMON",     value: topState ? topState.emoji : "—", sub: topState ? topState.label : "No sessions yet", accent: topState ? topState.color : C.textLight, bg: topState ? topState.bg : "#f5f3ef" },
+    { label: "MOST COMMON",     value: topEmoji, sub: topLabel, accent: topAccent, bg: topBg },
   ];
 
   return (

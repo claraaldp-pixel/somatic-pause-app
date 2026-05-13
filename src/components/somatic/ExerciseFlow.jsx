@@ -606,6 +606,7 @@ export default function ExerciseFlow({ survivalState, onComplete, onBack, initia
 
   const handleExerciseDone = () => {
     if (activeExercise) setCompleted((prev) => [...new Set([...prev, activeExercise.id])]);
+    if (initialExercise) { onBack(); return; }
     setActiveExercise(null);
   };
 

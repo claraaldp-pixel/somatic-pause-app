@@ -416,6 +416,29 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
 
   if (allDone) return <CompletionScreen onComplete={onComplete} />;
 
+  // Image-only mode: display a full-width picture, no video or steps
+  if (video?.video_type === "image") {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <GuideHeader exercise={exercise} onBack={onBack} dotsCount={1} dotsFilled={0} />
+        <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", border: `1px solid ${C.border}`, boxShadow: "0 1px 8px rgba(0,0,0,0.04)", marginBottom: 16 }}>
+          <img
+            src={video.video_url}
+            alt={exercise.title}
+            style={{ width: "100%", display: "block", objectFit: "cover" }}
+          />
+        </div>
+        <HedgehogTip text="Take your time. Let the image guide you at your own pace." />
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button onClick={onBack} style={{ flex: 1, padding: "13px 16px", borderRadius: 12, background: "#f0ede8", border: "none", fontSize: 13, fontWeight: 700, color: C.textMid, cursor: "pointer" }}>Skip</button>
+          <button onClick={() => setAllDone(true)} style={{ flex: 2, padding: "13px 16px", borderRadius: 12, background: C.lavenderDark, border: "none", fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px oklch(50% 0.13 295 / 0.4)" }}>
+            I'm done <ChevronRight style={{ width: 16, height: 16 }} />
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
   // Audio-only mode: no written steps, just the media player
   if (audioOnly) {
     return (
@@ -627,7 +650,7 @@ export default function ExerciseFlow({ survivalState, onComplete, onBack }) {
             value={reflection}
             onChange={(e) => setReflection(e.target.value)}
             placeholder="What did you notice in your body? Any shifts?"
-            style={{ width: "100%", fontSize: 14, color: C.text, border: "none", outline: "none", resize: "none", height: 88, lineHeight: 1.6, fontFamily: "inherit", color: C.text, background: "transparent" }}
+            style={{ width: "100%", fontSize: 14, color: C.text, border: "none", outline: "none", resize: "none", height: 88, lineHeight: 1.6, fontFamily: "inherit", background: "transparent" }}
           />
         </div>
 

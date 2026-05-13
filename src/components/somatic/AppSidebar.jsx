@@ -19,9 +19,10 @@ function computeStreak(dates) {
 }
 
 const NAV = [
-  { icon: "🏠", label: "Home",      phase: "welcome",  activeFor: ["welcome"] },
-  { icon: "🧘", label: "Exercises", phase: "checkin",  activeFor: ["checkin", "exercises"] },
-  { icon: "📈", label: "Progress",  phase: "history",  activeFor: ["history"] },
+  { icon: "🏠", label: "Home",        phase: "welcome",    activeFor: ["welcome"] },
+  { icon: "🧘", label: "Exercises",   phase: "checkin",    activeFor: ["checkin", "exercises"] },
+  { icon: "❤️", label: "Favourites",  phase: "favourites", activeFor: ["favourites"] },
+  { icon: "📈", label: "Progress",    phase: "history",    activeFor: ["history"] },
 ];
 
 export default function AppSidebar({ phase, setPhase, onLogout, isOpen }) {

@@ -5,6 +5,7 @@ import StateSelector from "@/components/somatic/StateSelector";
 import ExerciseFlow from "@/components/somatic/ExerciseFlow";
 import CheckInHistory from "@/components/somatic/CheckInHistory";
 import WelcomeBanner from "@/components/somatic/WelcomeBanner";
+import Favourites from "@/components/somatic/Favourites";
 import AppSidebar from "@/components/somatic/AppSidebar";
 
 export default function Home() {
@@ -14,8 +15,10 @@ export default function Home() {
   const [preScore, setPreScore] = useState(5);
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [navOpen, setNavOpen] = useState(false);
+  const [initialExercise, setInitialExercise] = useState(null);
 
   const handleSetPhase = (p) => {
+    if (p !== "exercises") setInitialExercise(null);
     setPhase(p);
     setNavOpen(false);
   };
@@ -25,6 +28,16 @@ export default function Home() {
     setPreScore(score);
     setSelectedSymptoms(symptoms);
     setPhase("exercises");
+  };
+
+  const handleStartFavourite = (exercise) => {
+    const state = exercise.id.split("_")[0];
+    setSelectedState(state);
+    setPreScore(5);
+    setSelectedSymptoms([]);
+    setInitialExercise(exercise);
+    setPhase("exercises");
+    setNavOpen(false);
   };
 
   const handleQuickStart = (state) => {
@@ -97,11 +110,15 @@ export default function Home() {
             <ExerciseFlow
               survivalState={selectedState}
               onComplete={handleSessionComplete}
-              onBack={() => setPhase("checkin")}
+              onBack={() => initialExercise ? setPhase("favourites") : setPhase("checkin")}
+              initialExercise={initialExercise}
             />
           )}
           {phase === "history" && (
             <CheckInHistory onNewSession={() => setPhase("checkin")} />
+          )}
+          {phase === "favourites" && (
+            <Favourites onStartExercise={handleStartFavourite} onBack={() => setPhase("welcome")} />
           )}
         </main>
       </div>

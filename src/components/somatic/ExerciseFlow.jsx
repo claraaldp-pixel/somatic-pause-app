@@ -560,10 +560,10 @@ function StepGuide({ exercise, onComplete, onBack, video }) {
   return <ExerciseGuide exercise={exercise} onComplete={onComplete} onBack={onBack} video={video} />;
 }
 
-export default function ExerciseFlow({ survivalState, onComplete, onBack }) {
+export default function ExerciseFlow({ survivalState, onComplete, onBack, initialExercise }) {
   const { user } = useAuth();
   const categories = EXERCISES[survivalState] || [];
-  const [activeExercise, setActiveExercise] = useState(null);
+  const [activeExercise, setActiveExercise] = useState(initialExercise || null);
   const [completed, setCompleted] = useState([]);
   const [showFinish, setShowFinish] = useState(false);
   const [postScore, setPostScore] = useState(5);

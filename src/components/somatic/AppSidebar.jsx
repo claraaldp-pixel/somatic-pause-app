@@ -26,9 +26,12 @@ const NAV = [
   { icon: "⚙️", label: "Settings",    phase: "settings",   activeFor: ["settings"] },
 ];
 
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
+
 export default function AppSidebar({ phase, setPhase, isOpen }) {
   const { user } = useAuth();
   const [streak, setStreak] = useState(0);
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   useEffect(() => {
     if (!user) return;
@@ -80,6 +83,23 @@ export default function AppSidebar({ phase, setPhase, isOpen }) {
           );
         })}
 
+        {isAdmin && (
+          <button
+            onClick={() => setPhase("admin")}
+            style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "10px 12px", borderRadius: 10,
+              fontSize: 14, fontWeight: 600,
+              color: phase === "admin" ? "oklch(50% 0.13 295)" : "#8b849a",
+              background: phase === "admin" ? "oklch(72% 0.1 300 / 0.12)" : "transparent",
+              border: "none", cursor: "pointer", transition: "all 0.15s",
+              textAlign: "left", width: "100%",
+            }}
+          >
+            <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>✉️</span>
+            Invite
+          </button>
+        )}
       </div>
 
       {/* Streak card */}

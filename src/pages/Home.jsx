@@ -7,6 +7,7 @@ import CheckInHistory from "@/components/somatic/CheckInHistory";
 import WelcomeBanner from "@/components/somatic/WelcomeBanner";
 import Favourites from "@/components/somatic/Favourites";
 import Settings from "@/components/somatic/Settings";
+import AdminInvite from "@/components/somatic/AdminInvite";
 import AppSidebar from "@/components/somatic/AppSidebar";
 
 export default function Home() {
@@ -123,6 +124,9 @@ export default function Home() {
           )}
           {phase === "settings" && (
             <Settings onBack={() => setPhase("welcome")} />
+          )}
+          {phase === "admin" && (
+            <AdminInvite onBack={() => setPhase("welcome")} />
           )}
         </main>
       </div>

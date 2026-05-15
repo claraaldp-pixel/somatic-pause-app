@@ -33,12 +33,32 @@ const C = {
 function VideoPlayer({ src }) {
   const ref = useRef(null);
   const [playing, setPlaying] = useState(true);
+  const [error, setError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const toggle = () => {
     if (!ref.current) return;
     playing ? ref.current.pause() : ref.current.play();
     setPlaying(!playing);
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!loaded) setError(true);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [loaded]);
+
+  if (error) {
+    return (
+      <div style={{ position: "relative", paddingBottom: "133.33%", background: "#f0ede8" }}>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: 24, textAlign: "center" }}>
+          <span style={{ fontSize: 32 }}>🎬</span>
+          <p style={{ fontSize: 13, color: "#9d97ac", lineHeight: 1.5 }}>Video couldn't load on this device.<br />Follow the written steps below.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ position: "relative", paddingBottom: "133.33%" }}>
@@ -49,6 +69,8 @@ function VideoPlayer({ src }) {
         loop
         muted
         playsInline
+        onCanPlay={() => setLoaded(true)}
+        onError={() => setError(true)}
         style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }}
       />
       <button

@@ -117,7 +117,7 @@ export const EXERCISES = {
         {
           id: "fight_ground_2",
           title: "Centering",
-          duration: "3 min",
+          duration: "9 min",
           type: "grounding",
           emoji: "🎯",
           description: "Returns you to your body's centre of gravity and the present moment.",
@@ -248,7 +248,7 @@ export const EXERCISES = {
         {
           id: "flight_ground_2",
           title: "Centering",
-          duration: "3 min",
+          duration: "9 min",
           type: "grounding",
           emoji: "🎯",
           description: "Returns you to your body's centre of gravity and the present moment.",
@@ -373,7 +373,7 @@ export const EXERCISES = {
         {
           id: "freeze_ground_2",
           title: "Centering",
-          duration: "3 min",
+          duration: "9 min",
           type: "grounding",
           emoji: "🎯",
           description: "Returns you to your body's centre and the present moment.",
@@ -497,7 +497,7 @@ export const EXERCISES = {
         {
           id: "fawn_ground_2",
           title: "Centering",
-          duration: "3 min",
+          duration: "9 min",
           type: "grounding",
           emoji: "🎯",
           description: "Returns you to your body's centre and reconnects you to your own needs.",

@@ -32,22 +32,28 @@ const C = {
 
 function VideoPlayer({ src }) {
   const ref = useRef(null);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(false);
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   const toggle = () => {
     if (!ref.current) return;
-    playing ? ref.current.pause() : ref.current.play();
-    setPlaying(!playing);
+    if (playing) {
+      ref.current.pause();
+      setPlaying(false);
+    } else {
+      ref.current.play().catch(() => setError(true));
+      setPlaying(true);
+    }
   };
 
   useEffect(() => {
+    if (!playing) return;
     const timer = setTimeout(() => {
       if (!loaded) setError(true);
     }, 8000);
     return () => clearTimeout(timer);
-  }, [loaded]);
+  }, [playing, loaded]);
 
   if (error) {
     return (
@@ -65,7 +71,6 @@ function VideoPlayer({ src }) {
       <video
         ref={ref}
         src={src}
-        autoPlay
         loop
         muted
         playsInline
@@ -73,20 +78,35 @@ function VideoPlayer({ src }) {
         onError={() => setError(true)}
         style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }}
       />
-      <button
-        onClick={toggle}
-        style={{
-          position: "absolute", bottom: 12, right: 12,
-          width: 40, height: 40, borderRadius: "50%",
-          background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)",
-          border: "none", cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
-        }}
-      >
-        {playing
-          ? <Pause style={{ width: 18, height: 18 }} />
-          : <Play style={{ width: 18, height: 18 }} />}
-      </button>
+      {!playing && (
+        <button
+          onClick={toggle}
+          style={{
+            position: "absolute", inset: 0,
+            background: "rgba(0,0,0,0.2)",
+            border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Play style={{ width: 22, height: 22, color: "#5a3e8a", marginLeft: 3 }} />
+          </div>
+        </button>
+      )}
+      {playing && (
+        <button
+          onClick={toggle}
+          style={{
+            position: "absolute", bottom: 12, right: 12,
+            width: 40, height: 40, borderRadius: "50%",
+            background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)",
+            border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
+          }}
+        >
+          <Pause style={{ width: 18, height: 18 }} />
+        </button>
+      )}
     </div>
   );
 }
@@ -425,24 +445,77 @@ function AudioPlayer({ src }) {
 }
 
 function ExerciseGuide({ exercise, onComplete, onBack, video }) {
-  const [step, setStep] = useState(0);
   const [allDone, setAllDone] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
   const steps = exercise.steps || [];
-  const total = steps.length;
-  const audioOnly = total === 0;
+  const audioOnly = steps.length === 0;
 
-  const handleNext = () => {
-    if (step < total - 1) setStep((s) => s + 1);
-    else setAllDone(true);
-  };
+  const MIN_SECONDS = 60;
+  const buttonUnlocked = elapsed >= MIN_SECONDS;
+  const countdownLeft = Math.max(0, MIN_SECONDS - elapsed);
+
+  const suggestedSeconds = (() => {
+    const m = exercise.duration?.match(/(\d+)/);
+    return m ? parseInt(m[1]) * 60 : null;
+  })();
+
+  const fmtTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+  useEffect(() => {
+    if (allDone) return;
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [allDone]);
 
   if (allDone) return <CompletionScreen onComplete={onComplete} />;
 
-  // Image-only mode: display a full-width picture, no video or steps
+  const timerProgress = suggestedSeconds ? Math.min(elapsed / suggestedSeconds, 1) : null;
+
+  const timerStrip = (
+    <div style={{ background: "#fff", borderRadius: 12, padding: "10px 16px", border: `1px solid ${C.border}`, marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
+      <span style={{ fontSize: 18 }}>⏱</span>
+      <div style={{ flex: 1 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: timerProgress !== null ? 6 : 0 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{fmtTime(elapsed)}</span>
+          {suggestedSeconds && <span style={{ fontSize: 12, color: C.textLight }}>/ {fmtTime(suggestedSeconds)}</span>}
+        </div>
+        {timerProgress !== null && (
+          <div style={{ height: 4, background: C.border, borderRadius: 2, overflow: "hidden" }}>
+            <motion.div
+              style={{ height: "100%", background: C.lavender, borderRadius: 2 }}
+              animate={{ width: `${timerProgress * 100}%` }}
+              transition={{ duration: 0.8 }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const doneButton = (
+    <button
+      onClick={buttonUnlocked ? () => setAllDone(true) : undefined}
+      style={{
+        flex: 2, padding: "13px 16px", borderRadius: 12,
+        background: buttonUnlocked ? C.lavenderDark : "#c4bcd4",
+        border: "none", fontSize: 13, fontWeight: 700, color: "#fff",
+        cursor: buttonUnlocked ? "pointer" : "default",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+        boxShadow: buttonUnlocked ? "0 4px 14px oklch(50% 0.13 295 / 0.4)" : "none",
+        transition: "background 0.4s ease, box-shadow 0.4s ease",
+      }}
+    >
+      I'm done
+      <ChevronRight style={{ width: 16, height: 16 }} />
+    </button>
+  );
+
+  // Image-only mode
   if (video?.video_type === "image") {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <GuideHeader exercise={exercise} onBack={onBack} dotsCount={1} dotsFilled={0} />
+        <GuideHeader exercise={exercise} onBack={onBack} dotsCount={0} dotsFilled={0} />
+        {timerStrip}
         <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", border: `1px solid ${C.border}`, boxShadow: "0 1px 8px rgba(0,0,0,0.04)", marginBottom: 16 }}>
           <img
             src={video.video_url}
@@ -453,9 +526,7 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
         <HedgehogTip text="Take your time. Let the image guide you at your own pace." />
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
           <button onClick={onBack} style={{ flex: 1, padding: "13px 16px", borderRadius: 12, background: "#f0ede8", border: "none", fontSize: 13, fontWeight: 700, color: C.textMid, cursor: "pointer" }}>Skip</button>
-          <button onClick={() => setAllDone(true)} style={{ flex: 2, padding: "13px 16px", borderRadius: 12, background: C.lavenderDark, border: "none", fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px oklch(50% 0.13 295 / 0.4)" }}>
-            I'm done <ChevronRight style={{ width: 16, height: 16 }} />
-          </button>
+          {doneButton}
         </div>
       </motion.div>
     );
@@ -465,7 +536,8 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
   if (audioOnly) {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <GuideHeader exercise={exercise} onBack={onBack} dotsCount={1} dotsFilled={0} />
+        <GuideHeader exercise={exercise} onBack={onBack} dotsCount={0} dotsFilled={0} />
+        {timerStrip}
         <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", border: `1px solid ${C.border}`, boxShadow: "0 1px 8px rgba(0,0,0,0.04)", marginBottom: 16 }}>
           {video?.video_type === "audio" ? (
             <AudioPlayer src={video.video_url} />
@@ -482,9 +554,7 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
         <HedgehogTip text="Take your time. Let the audio guide you at your own pace." />
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
           <button onClick={onBack} style={{ flex: 1, padding: "13px 16px", borderRadius: 12, background: "#f0ede8", border: "none", fontSize: 13, fontWeight: 700, color: C.textMid, cursor: "pointer" }}>Skip</button>
-          <button onClick={() => setAllDone(true)} style={{ flex: 2, padding: "13px 16px", borderRadius: 12, background: C.lavenderDark, border: "none", fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px oklch(50% 0.13 295 / 0.4)" }}>
-            I'm done <ChevronRight style={{ width: 16, height: 16 }} />
-          </button>
+          {doneButton}
         </div>
       </motion.div>
     );
@@ -492,7 +562,8 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <GuideHeader exercise={exercise} onBack={onBack} dotsCount={total} dotsFilled={step} />
+      <GuideHeader exercise={exercise} onBack={onBack} dotsCount={0} dotsFilled={0} />
+      {timerStrip}
 
       <div className="grid md:grid-cols-2 gap-5 items-stretch">
         {/* Left: audio / video / placeholder */}
@@ -510,44 +581,26 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
               <p style={{ fontSize: 13, color: C.textMid, lineHeight: 1.65 }}>{exercise.description}</p>
             </div>
           )}
-          <div style={{ padding: "14px 20px 18px" }}>
-            <div style={{ height: 4, background: C.border, borderRadius: 2, marginBottom: 8, overflow: "hidden" }}>
-              <motion.div
-                style={{ height: "100%", background: C.lavender, borderRadius: 2 }}
-                animate={{ width: `${((step + 1) / total) * 100}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-            <p style={{ fontSize: 12, color: C.textLight, textAlign: "center" }}>Step {step + 1} of {total}</p>
-          </div>
         </div>
 
-        {/* Right: steps card only — hedgehog + buttons sit below the grid */}
+        {/* Right: all steps visible at once */}
         <div style={{ background: "#fff", borderRadius: 16, padding: "20px", border: `1px solid ${C.border}`, boxShadow: "0 1px 6px rgba(0,0,0,0.04)", overflowY: "auto" }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 14 }}>How it works</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {steps.map((s, i) => (
               <div
                 key={i}
-                style={{
-                  display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 12px",
-                  borderRadius: 12, background: i === step ? C.lavenderLight : "transparent",
-                  transition: "background 0.3s ease",
-                }}
+                style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 12px", borderRadius: 12 }}
               >
                 <div style={{
                   width: 26, height: 26, borderRadius: "50%", flexShrink: 0, marginTop: 1,
-                  background: i < step ? C.lavender : i === step ? C.lavenderDark : "#f0ede8",
+                  background: "#f0ede8",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 11, fontWeight: 700,
-                  transition: "background 0.3s ease",
                 }}>
-                  {i < step
-                    ? <Check style={{ width: 12, height: 12, color: "#fff" }} />
-                    : <span style={{ color: i === step ? "#fff" : C.textLight }}>{i + 1}</span>
-                  }
+                  <span style={{ color: C.textLight }}>{i + 1}</span>
                 </div>
-                <p style={{ fontSize: 13, color: i === step ? C.text : C.textMid, lineHeight: 1.55, marginTop: 3, fontWeight: i === step ? 600 : 400 }}>{s}</p>
+                <p style={{ fontSize: 13, color: C.textMid, lineHeight: 1.55, marginTop: 3 }}>{s}</p>
               </div>
             ))}
           </div>
@@ -564,13 +617,7 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
           >
             Skip
           </button>
-          <button
-            onClick={handleNext}
-            style={{ flex: 2, padding: "13px 16px", borderRadius: 12, background: C.lavenderDark, border: "none", fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px oklch(50% 0.13 295 / 0.4)" }}
-          >
-            {step < total - 1 ? "Next step" : "I'm done"}
-            <ChevronRight style={{ width: 16, height: 16 }} />
-          </button>
+          {doneButton}
         </div>
       </div>
     </motion.div>

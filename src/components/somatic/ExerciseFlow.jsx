@@ -34,7 +34,9 @@ function VideoPlayer({ src }) {
   const ref = useRef(null);
   const [playing, setPlaying] = useState(true);
   const [error, setError] = useState(false);
+  const [errorCode, setErrorCode] = useState(null);
   const [loaded, setLoaded] = useState(false);
+  const debug = new URLSearchParams(window.location.search).has("debug");
 
   const toggle = () => {
     if (!ref.current) return;
@@ -55,6 +57,12 @@ function VideoPlayer({ src }) {
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: 24, textAlign: "center" }}>
           <span style={{ fontSize: 32 }}>🎬</span>
           <p style={{ fontSize: 13, color: "#9d97ac", lineHeight: 1.5 }}>Video couldn't load on this device.<br />Follow the written steps below.</p>
+          {debug && (
+            <p style={{ fontSize: 11, color: "#c97a85", wordBreak: "break-all", marginTop: 8 }}>
+              error code: {errorCode ?? "timeout"}<br />
+              url: {src}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -70,9 +78,14 @@ function VideoPlayer({ src }) {
         muted
         playsInline
         onCanPlay={() => setLoaded(true)}
-        onError={() => setError(true)}
+        onError={(e) => { setErrorCode(e.target.error?.code); setError(true); }}
         style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }}
       />
+      {debug && (
+        <p style={{ position: "absolute", bottom: 60, left: 8, right: 8, fontSize: 10, color: "#fff", background: "rgba(0,0,0,0.6)", borderRadius: 6, padding: "4px 8px", wordBreak: "break-all" }}>
+          {src}
+        </p>
+      )}
       <button
         onClick={toggle}
         style={{

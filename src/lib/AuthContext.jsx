@@ -14,21 +14,20 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(isRecoveryUrl());
 
-  const checkWhitelist = async (supabaseUser) => {
-    const { data } = await supabase
-      .from('whitelist')
-      .select('email')
-      .eq('email', supabaseUser.email)
-      .maybeSingle();
+  const checkAccess = async (supabaseUser) => {
+    const { data } = await supabase.rpc('has_access', {
+      check_user_id: supabaseUser.id,
+      check_email: supabaseUser.email,
+    });
 
     if (data) {
       setUser(supabaseUser);
       setIsAuthenticated(true);
       setAuthError(null);
     } else {
-      setUser(null);
+      setUser(supabaseUser);
       setIsAuthenticated(false);
-      setAuthError({ type: 'user_not_registered' });
+      setAuthError({ type: 'no_subscription' });
     }
     setIsLoadingAuth(false);
     setAuthChecked(true);
@@ -39,7 +38,7 @@ export const AuthProvider = ({ children }) => {
     if (!isRecoveryUrl()) {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
-          checkWhitelist(session.user);
+          checkAccess(session.user);
         } else {
           setIsLoadingAuth(false);
           setAuthChecked(true);
@@ -55,7 +54,7 @@ export const AuthProvider = ({ children }) => {
         setAuthChecked(true);
       } else if (event === 'SIGNED_IN') {
         setIsPasswordRecovery(false);
-        checkWhitelist(session.user);
+        checkAccess(session.user);
       } else if (event === 'SIGNED_OUT') {
         setIsPasswordRecovery(false);
         setUser(null);
@@ -73,7 +72,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoadingAuth(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      await checkWhitelist(session.user);
+      await checkAccess(session.user);
     } else {
       setIsAuthenticated(false);
       setIsLoadingAuth(false);

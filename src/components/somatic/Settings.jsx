@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, Check } from "lucide-react";
 import { supabase } from "@/api/supabaseClient";
@@ -91,6 +91,21 @@ export default function Settings({ onBack }) {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState("");
 
+  // Subscription
+  const [subscription, setSubscription] = useState(undefined); // undefined = loading, null = none
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalMsg, setPortalMsg] = useState("");
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from("subscriptions")
+      .select("status, current_period_end")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setSubscription(data || null));
+  }, [user?.id]);
+
   const handleSaveName = async () => {
     if (!displayName.trim()) { setNameMsg("!Name can't be empty."); return; }
     setNameLoading(true); setNameMsg("");
@@ -121,6 +136,35 @@ export default function Settings({ onBack }) {
     setNewPassword(""); setConfirmPassword("");
   };
 
+  const handleManageSubscription = async () => {
+    setPortalLoading(true); setPortalMsg("");
+    const { data: { session } } = await supabase.auth.getSession();
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+        }
+      );
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        setPortalMsg(`!${json.error || "Something went wrong."}`);
+        setPortalLoading(false);
+        return;
+      }
+      window.location.href = json.url;
+    } catch {
+      setPortalMsg("!Something went wrong. Please try again.");
+      setPortalLoading(false);
+    }
+  };
+
+  const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : null;
+
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} style={{ paddingTop: 16 }}>
       <button
@@ -138,6 +182,34 @@ export default function Settings({ onBack }) {
         </div>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: C.text, letterSpacing: "-0.5px" }}>Settings</h2>
       </div>
+
+      {/* Subscription */}
+      <Card title="Subscription">
+        {subscription === undefined && (
+          <p style={{ fontSize: 12, color: C.textLight }}>Loading…</p>
+        )}
+        {subscription === null && (
+          <p style={{ fontSize: 13, color: C.textMid }}>
+            You have complimentary access to Somatic Pause. No subscription needed.
+          </p>
+        )}
+        {subscription && (
+          <>
+            <p style={{ fontSize: 13, color: C.textMid, marginBottom: 14 }}>
+              {subscription.status === "trialing" && subscription.current_period_end &&
+                `Your free trial ends ${formatDate(subscription.current_period_end)}.`}
+              {subscription.status === "active" && subscription.current_period_end &&
+                `Your subscription renews ${formatDate(subscription.current_period_end)}.`}
+              {subscription.status !== "trialing" && subscription.status !== "active" &&
+                `Subscription status: ${subscription.status}.`}
+            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <SaveButton onClick={handleManageSubscription} loading={portalLoading} label="Manage subscription" />
+              <StatusMsg msg={portalMsg} />
+            </div>
+          </>
+        )}
+      </Card>
 
       {/* Profile */}
       <Card title="Profile">

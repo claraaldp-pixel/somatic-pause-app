@@ -75,7 +75,7 @@ export default function AdminInvite({ onBack }) {
           <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "1px", color: C.textLight, fontWeight: 700 }}>Admin</p>
         </div>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: C.text, letterSpacing: "-0.5px", marginBottom: 4 }}>Invite a user</h2>
-        <p style={{ fontSize: 13, color: C.textMid }}>Adds the email to the whitelist and sends an invitation.</p>
+        <p style={{ fontSize: 13, color: C.textMid }}>Grants permanent free access (no subscription required) and sends an invitation.</p>
       </div>
 
       <div style={{ background: "#fff", borderRadius: 16, padding: "24px", border: `1px solid ${C.border}`, boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}>

@@ -24,6 +24,7 @@ export default function Login() {
   const { isPasswordRecovery } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [step, setStep] = useState(isPasswordRecovery ? 'set-password' : 'login');
   const [loading, setLoading] = useState(false);
@@ -38,6 +39,24 @@ export default function Login() {
       password,
     });
     if (error) setError(error.message === 'Invalid login credentials' ? 'Incorrect email or password.' : error.message);
+    setLoading(false);
+  };
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    if (error) setError(error.message);
+    else setStep('signup-sent');
     setLoading(false);
   };
 
@@ -107,6 +126,71 @@ export default function Login() {
                 style={{ display: 'block', margin: '16px auto 0', fontSize: 13, color: '#9d97ac', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 Forgot your password?
+              </button>
+              <button
+                onClick={() => { setStep('signup'); setError(''); }}
+                style={{ display: 'block', margin: '8px auto 0', fontSize: 13, color: '#9d97ac', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Don't have an account? Sign up
+              </button>
+            </motion.div>
+          )}
+
+          {/* SIGNUP */}
+          {step === 'signup' && (
+            <motion.div key="signup" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <h1 style={{ fontSize: 24, fontWeight: 300, color: '#2d2840', marginBottom: 8, textAlign: 'center' }}>Create your account</h1>
+              <p style={{ fontSize: 14, color: '#9d97ac', textAlign: 'center', marginBottom: 32, lineHeight: 1.6 }}>
+                Start your free trial.
+              </p>
+              <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <input
+                  type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com" required style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = '#9b8ec4'}
+                  onBlur={e => e.target.style.borderColor = '#e8e4dc'}
+                />
+                <input
+                  type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password" required minLength={8} style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = '#9b8ec4'}
+                  onBlur={e => e.target.style.borderColor = '#e8e4dc'}
+                />
+                <input
+                  type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm password" required minLength={8} style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = '#9b8ec4'}
+                  onBlur={e => e.target.style.borderColor = '#e8e4dc'}
+                />
+                {error && <p style={{ fontSize: 12, color: '#c97a85' }}>{error}</p>}
+                <button type="submit" disabled={loading || !email || password.length < 8 || !confirmPassword} style={btnStyle(loading || !email || password.length < 8 || !confirmPassword)}>
+                  {loading ? 'Creating account…' : 'Sign up'}
+                </button>
+              </form>
+              <button
+                onClick={() => { setStep('login'); setError(''); }}
+                style={{ display: 'block', margin: '16px auto 0', fontSize: 13, color: '#9d97ac', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Already have an account? Sign in
+              </button>
+            </motion.div>
+          )}
+
+          {/* SIGNUP CONFIRMATION SENT */}
+          {step === 'signup-sent' && (
+            <motion.div key="signup-sent" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 40, marginBottom: 24 }}>📬</div>
+              <h1 style={{ fontSize: 24, fontWeight: 300, color: '#2d2840', marginBottom: 12 }}>Check your inbox</h1>
+              <p style={{ fontSize: 14, color: '#9d97ac', marginBottom: 4 }}>We sent a confirmation link to</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#2d2840', marginBottom: 32 }}>{email}</p>
+              <p style={{ fontSize: 12, color: '#9d97ac', marginBottom: 24, lineHeight: 1.6 }}>
+                Click the link to confirm your email, then sign in to get started.
+              </p>
+              <button
+                onClick={() => { setStep('login'); setError(''); }}
+                style={{ fontSize: 13, color: '#9d97ac', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Back to sign in
               </button>
             </motion.div>
           )}

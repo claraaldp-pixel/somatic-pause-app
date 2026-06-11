@@ -47,12 +47,17 @@ Deno.serve(async (req) => {
           break;
         }
 
+        // current_period_end moved from the subscription to its items in
+        // newer Stripe API versions; fall back to the legacy field for safety.
+        const periodEndSeconds =
+          subscription.items.data[0]?.current_period_end ?? subscription.current_period_end;
+
         const { error } = await supabase.from("subscriptions").upsert({
           user_id: userId,
           stripe_customer_id: subscription.customer as string,
           stripe_subscription_id: subscription.id,
           status: subscription.status,
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          current_period_end: periodEndSeconds ? new Date(periodEndSeconds * 1000).toISOString() : null,
           price_id: subscription.items.data[0]?.price.id ?? null,
           updated_at: new Date().toISOString(),
         }, { onConflict: "user_id" });

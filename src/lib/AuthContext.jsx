@@ -69,7 +69,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkUserAuth = async () => {
-    setIsLoadingAuth(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
       await checkAccess(session.user);

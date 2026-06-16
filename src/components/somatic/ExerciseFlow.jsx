@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, Check, ChevronRight, Heart, Play, Pause } from "lucide-react";
-import { EXERCISES } from "./exercises";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import hedgehog from "@/assets/hedgehog-mascot.png";
@@ -629,9 +628,35 @@ function StepGuide({ exercise, onComplete, onBack, video }) {
   return <ExerciseGuide exercise={exercise} onComplete={onComplete} onBack={onBack} video={video} />;
 }
 
+function groupIntoCategories(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    if (!map.has(row.category_order)) {
+      map.set(row.category_order, {
+        category:      row.category,
+        categoryEmoji: row.category_emoji,
+        exercises:     [],
+      });
+    }
+    map.get(row.category_order).exercises.push({
+      id:          row.id,
+      title:       row.title,
+      duration:    row.duration,
+      type:        row.type,
+      emoji:       row.emoji,
+      description: row.description,
+      steps:       row.steps || [],
+      ...(row.phases && { phases: row.phases }),
+      ...(row.rounds && { rounds: row.rounds }),
+    });
+  }
+  return Array.from(map.values());
+}
+
 export default function ExerciseFlow({ survivalState, onComplete, onBack, initialExercise }) {
   const { user } = useAuth();
-  const categories = EXERCISES[survivalState] || [];
+  const [categories, setCategories] = useState([]);
+  const [loadingExercises, setLoadingExercises] = useState(true);
   const [activeExercise, setActiveExercise] = useState(initialExercise || null);
   const [completed, setCompleted] = useState([]);
   const [showFinish, setShowFinish] = useState(false);
@@ -641,8 +666,21 @@ export default function ExerciseFlow({ survivalState, onComplete, onBack, initia
   const [likedExercises, setLikedExercises] = useState(new Set());
 
   useEffect(() => {
+    setLoadingExercises(true);
+    supabase
+      .from('exercises')
+      .select('*')
+      .eq('survival_state', survivalState)
+      .order('category_order')
+      .order('exercise_order')
+      .then(({ data }) => {
+        setCategories(groupIntoCategories(data || []));
+        setLoadingExercises(false);
+      });
+
     supabase.from('exercise_videos').select('*').eq('survival_state', survivalState)
       .then(({ data }) => setVideos(data || []));
+
     if (user) {
       supabase.from('profiles').select('liked_exercises').eq('id', user.id).maybeSingle()
         .then(({ data }) => { if (data?.liked_exercises) setLikedExercises(new Set(data.liked_exercises)); });
@@ -678,6 +716,17 @@ export default function ExerciseFlow({ survivalState, onComplete, onBack, initia
     if (initialExercise) { onBack(); return; }
     setActiveExercise(null);
   };
+
+  if (loadingExercises) {
+    return (
+      <div style={{ paddingTop: 40, textAlign: 'center' }}>
+        <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#ede8f8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 24 }}>
+          🦔
+        </div>
+        <p style={{ fontSize: 14, color: '#9d97ac' }}>Loading your practices…</p>
+      </div>
+    );
+  }
 
   if (activeExercise) {
     return (

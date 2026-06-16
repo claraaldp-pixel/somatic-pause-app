@@ -666,6 +666,7 @@ export default function ExerciseFlow({ survivalState, onComplete, onBack, initia
   const [likedExercises, setLikedExercises] = useState(new Set());
 
   useEffect(() => {
+    let active = true;
     setLoadingExercises(true);
     supabase
       .from('exercises')
@@ -674,17 +675,19 @@ export default function ExerciseFlow({ survivalState, onComplete, onBack, initia
       .order('category_order')
       .order('exercise_order')
       .then(({ data }) => {
+        if (!active) return;
         setCategories(groupIntoCategories(data || []));
         setLoadingExercises(false);
       });
 
     supabase.from('exercise_videos').select('*').eq('survival_state', survivalState)
-      .then(({ data }) => setVideos(data || []));
+      .then(({ data }) => { if (active) setVideos(data || []); });
 
     if (user) {
       supabase.from('profiles').select('liked_exercises').eq('id', user.id).maybeSingle()
-        .then(({ data }) => { if (data?.liked_exercises) setLikedExercises(new Set(data.liked_exercises)); });
+        .then(({ data }) => { if (active && data?.liked_exercises) setLikedExercises(new Set(data.liked_exercises)); });
     }
+    return () => { active = false; };
   }, [survivalState, user]);
 
   const handleToggleLike = (exerciseId) => {

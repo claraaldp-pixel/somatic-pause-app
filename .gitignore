@@ -32,3 +32,6 @@ dist-ssr
 
 .env
 .vercel
+
+# Seed scripts contain IP — never commit
+scripts/

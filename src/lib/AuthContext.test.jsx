@@ -92,6 +92,9 @@ describe('Sentry user context', () => {
     );
 
     act(() => authCallback('SIGNED_OUT', null));
-    await waitFor(() => expect(Sentry.setUser).toHaveBeenCalledWith(null));
+    await waitFor(() => {
+      expect(Sentry.setUser).toHaveBeenCalledTimes(1);
+      expect(Sentry.setUser).toHaveBeenCalledWith(null);
+    });
   });
 });

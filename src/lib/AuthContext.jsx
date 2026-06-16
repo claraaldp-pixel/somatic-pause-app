@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
       check_email: supabaseUser.email,
     });
 
+    // Tag errors with user ID regardless of subscription status — errors on Paywall are also useful
     Sentry.setUser({ id: supabaseUser.id });
 
     if (data) {

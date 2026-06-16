@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+
 export const TEST_USER = { id: 'user-1', email: 'test@example.com' };
 
 export function mockNoSession(supabase) {

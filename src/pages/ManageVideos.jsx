@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/api/supabaseClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, Upload, Link, ChevronLeft, Loader2 } from "lucide-react";
-import { EXERCISES } from "@/components/somatic/exercises";
 import { createPageUrl } from "@/utils";
 
 const STATE_LABELS = {
@@ -13,12 +12,6 @@ const STATE_LABELS = {
   safe: { label: "Safe", emoji: "🌿" },
 };
 
-const ALL_EXERCISES = Object.entries(EXERCISES).flatMap(([state, categories]) =>
-  categories.flatMap((cat) =>
-    cat.exercises.map((ex) => ({ ...ex, survival_state: state, category: cat.category }))
-  )
-);
-
 export default function ManageVideos() {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,9 +19,20 @@ export default function ManageVideos() {
   const [form, setForm] = useState({ exercise_id: "", survival_state: "", exercise_title: "", video_url: "", video_type: "youtube" });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [allExercises, setAllExercises] = useState([]);
 
   useEffect(() => {
     loadVideos();
+  }, []);
+
+  useEffect(() => {
+    supabase
+      .from('exercises')
+      .select('id, title, survival_state, category')
+      .order('survival_state')
+      .order('category_order')
+      .order('exercise_order')
+      .then(({ data }) => setAllExercises(data || []));
   }, []);
 
   const loadVideos = async () => {
@@ -41,7 +45,7 @@ export default function ManageVideos() {
   };
 
   const handleExerciseChange = (exerciseId) => {
-    const ex = ALL_EXERCISES.find((e) => e.id === exerciseId);
+    const ex = allExercises.find((e) => e.id === exerciseId);
     if (ex) {
       setForm((f) => ({ ...f, exercise_id: exerciseId, survival_state: ex.survival_state, exercise_title: ex.title }));
     }
@@ -119,15 +123,17 @@ export default function ManageVideos() {
                     className="w-full border border-[#EDE8E2] rounded-xl px-3 py-2.5 text-sm text-[#4A3728] bg-white outline-none focus:border-[#C5A882]"
                   >
                     <option value="">Select an exercise...</option>
-                    {Object.entries(EXERCISES).map(([state, categories]) => (
-                      categories.map((cat) => (
-                        <optgroup key={`${state}-${cat.category}`} label={`${STATE_LABELS[state].emoji} ${STATE_LABELS[state].label} — ${cat.category}`}>
-                          {cat.exercises.map((ex) => (
+                    {Object.entries(STATE_LABELS).map(([state, info]) => {
+                      const stateExercises = allExercises.filter((ex) => ex.survival_state === state);
+                      if (stateExercises.length === 0) return null;
+                      return (
+                        <optgroup key={state} label={`${info.emoji} ${info.label}`}>
+                          {stateExercises.map((ex) => (
                             <option key={ex.id} value={ex.id}>{ex.title}</option>
                           ))}
                         </optgroup>
-                      ))
-                    ))}
+                      );
+                    })}
                   </select>
                 </div>
 

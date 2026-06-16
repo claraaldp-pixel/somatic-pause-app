@@ -1,13 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Heart, ChevronLeft } from "lucide-react";
-import { EXERCISES } from "./exercises";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
-
-const ALL_EXERCISES = Object.values(EXERCISES).flatMap((cats) =>
-  cats.flatMap((cat) => cat.exercises)
-);
 
 const TYPE_LABELS = {
   breathwork: "Breathwork",
@@ -35,6 +30,8 @@ const C = {
 export default function Favourites({ onStartExercise, onBack }) {
   const { user } = useAuth();
   const [likedIds, setLikedIds] = useState(null);
+  const [allExercises, setAllExercises] = useState([]);
+  const [loadingExercises, setLoadingExercises] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -42,15 +39,29 @@ export default function Favourites({ onStartExercise, onBack }) {
       .then(({ data }) => setLikedIds(data?.liked_exercises || []));
   }, [user]);
 
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from('exercises')
+      .select('*')
+      .then(({ data }) => {
+        if (!active) return;
+        setAllExercises(data || []);
+        setLoadingExercises(false);
+      })
+      .catch(() => { if (active) setLoadingExercises(false); });
+    return () => { active = false; };
+  }, []);
+
   const handleUnlike = (exerciseId) => {
     const next = likedIds.filter((id) => id !== exerciseId);
     setLikedIds(next);
     if (user) supabase.from("profiles").update({ liked_exercises: next }).eq("id", user.id).then(() => {});
   };
 
-  const liked = likedIds === null
+  const liked = likedIds === null || loadingExercises
     ? []
-    : ALL_EXERCISES.filter((ex) => likedIds.includes(ex.id));
+    : allExercises.filter((ex) => likedIds.includes(ex.id));
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} style={{ paddingTop: 16 }}>
@@ -71,7 +82,7 @@ export default function Favourites({ onStartExercise, onBack }) {
         <p style={{ fontSize: 13, color: C.textMid }}>Practices you've saved for quick access.</p>
       </div>
 
-      {likedIds === null ? (
+      {(likedIds === null || loadingExercises) ? (
         <div style={{ textAlign: "center", paddingTop: 60, color: C.textLight, fontSize: 14 }}>Loading…</div>
       ) : liked.length === 0 ? (
         <div style={{ textAlign: "center", paddingTop: 60 }}>

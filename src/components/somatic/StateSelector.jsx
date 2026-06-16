@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
-import { CATEGORIES } from "./symptomData";
+import { supabase } from "@/api/supabaseClient";
 
 const C = {
   lavenderDark: "oklch(50% 0.13 295)",
@@ -37,6 +37,26 @@ function computeResult(selections) {
   return { primary, secondary };
 }
 
+function buildCategories(catRows, symptomRows) {
+  return catRows.map((cat) => ({
+    id:          cat.id,
+    label:       cat.label,
+    emoji:       cat.emoji,
+    description: cat.description,
+    symptoms:    symptomRows
+      .filter((s) => s.category_id === cat.id)
+      .map((s) => ({
+        text:   s.text,
+        scores: {
+          fight:  s.fight_score,
+          flight: s.flight_score,
+          freeze: s.freeze_score,
+          fawn:   s.fawn_score,
+        },
+      })),
+  }));
+}
+
 export default function StateSelector({ onSelect, onBack }) {
   const [step, setStep] = useState("category");
   const [activeCategory, setActiveCategory] = useState(null);
@@ -45,6 +65,21 @@ export default function StateSelector({ onSelect, onBack }) {
   const [result, setResult] = useState(null);
   const [score, setScore] = useState(5);
   const [selectedPracticeState, setSelectedPracticeState] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      supabase.from('symptom_categories').select('*').order('display_order'),
+      supabase.from('symptoms').select('*').order('display_order'),
+    ]).then(([{ data: cats }, { data: syms }]) => {
+      if (!active) return;
+      setCategories(buildCategories(cats || [], syms || []));
+      setLoadingCategories(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   const toggleSymptom = (catId, idx) => {
     setChecked((prev) => {
@@ -62,7 +97,7 @@ export default function StateSelector({ onSelect, onBack }) {
 
   const handleSeeResult = () => {
     const selections = [];
-    CATEGORIES.forEach((cat) => {
+    categories.forEach((cat) => {
       (checked[cat.id] || new Set()).forEach((idx) => selections.push({ symptom: cat.symptoms[idx] }));
     });
     const computed = computeResult(selections);
@@ -73,7 +108,7 @@ export default function StateSelector({ onSelect, onBack }) {
 
   const getSelectedSymptoms = () => {
     const symptoms = [];
-    CATEGORIES.forEach((cat) => {
+    categories.forEach((cat) => {
       (checked[cat.id] || new Set()).forEach((idx) => symptoms.push(cat.symptoms[idx].text));
     });
     return symptoms;
@@ -103,6 +138,14 @@ export default function StateSelector({ onSelect, onBack }) {
     </button>
   );
 
+  if (loadingCategories) {
+    return (
+      <div style={{ paddingTop: 60, textAlign: 'center' }}>
+        <p style={{ fontSize: 14, color: '#9d97ac' }}>Loading…</p>
+      </div>
+    );
+  }
+
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
       <button
@@ -125,7 +168,7 @@ export default function StateSelector({ onSelect, onBack }) {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
-              {CATEGORIES.map((cat, i) => {
+              {categories.map((cat, i) => {
                 const done = completedCategories.has(cat.id);
                 const count = (checked[cat.id] || new Set()).size;
                 return (

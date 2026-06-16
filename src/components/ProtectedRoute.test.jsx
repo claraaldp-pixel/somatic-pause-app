@@ -41,15 +41,25 @@ const renderRoute = (contextOverrides = {}) => {
 };
 
 describe('ProtectedRoute', () => {
+  it('loading: does not render protected content', () => {
+    renderRoute({ isLoadingAuth: true });
+    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+  });
+
   it('no user: renders unauthenticatedElement', () => {
-    renderRoute({ isAuthenticated: false, authError: null });
+    renderRoute({ authError: null });
     expect(screen.getByText('Sign in')).toBeInTheDocument();
+    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+  });
+
+  it('user not registered: renders UserNotRegisteredError', () => {
+    renderRoute({ authError: { type: 'user_not_registered' } });
+    expect(screen.getByText('UserNotRegisteredError')).toBeInTheDocument();
     expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
   });
 
   it('user with no subscription: renders Paywall', () => {
     renderRoute({
-      isAuthenticated: false,
       authError: { type: 'no_subscription' },
       user: { email: 'test@example.com' },
     });

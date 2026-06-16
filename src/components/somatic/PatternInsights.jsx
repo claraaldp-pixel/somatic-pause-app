@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { startOfWeek, startOfMonth, isAfter, parseISO } from "date-fns";
-import { SYMPTOM_STATE_MAP } from "./symptomData";
+import { supabase } from "@/api/supabaseClient";
 
 const C = {
   lavenderDark: "oklch(50% 0.13 295)",
@@ -23,6 +23,27 @@ const STATE_INFO = {
 // When hideRangePicker=true, checkins are already pre-filtered by parent
 export default function PatternInsights({ checkins, hideRangePicker = false }) {
   const [range, setRange] = useState("month");
+  const [symptomStateMap, setSymptomStateMap] = useState({});
+
+  useEffect(() => {
+    supabase
+      .from('symptoms')
+      .select('text, fight_score, flight_score, freeze_score, fawn_score')
+      .then(({ data }) => {
+        if (!data) return;
+        const map = {};
+        data.forEach((s) => {
+          const dominant = Object.entries({
+            fight: s.fight_score,
+            flight: s.flight_score,
+            freeze: s.freeze_score,
+            fawn: s.fawn_score,
+          }).sort((a, b) => b[1] - a[1])[0];
+          if (dominant[1] > 0) map[s.text] = dominant[0];
+        });
+        setSymptomStateMap(map);
+      });
+  }, []);
 
   const filtered = useMemo(() => {
     if (hideRangePicker || range === "all") return checkins;
@@ -112,7 +133,7 @@ export default function PatternInsights({ checkins, hideRangePicker = false }) {
           <p style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 14 }}>How it most often shows up</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {symptomCounts.map(([symptom, count], i) => {
-              const stateKey = SYMPTOM_STATE_MAP[symptom];
+              const stateKey = symptomStateMap[symptom];
               const stateInfo = stateKey ? STATE_INFO[stateKey] : null;
               return (
                 <motion.div

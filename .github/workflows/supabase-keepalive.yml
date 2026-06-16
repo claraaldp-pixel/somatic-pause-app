@@ -11,9 +11,15 @@ jobs:
     steps:
       - name: Ping Supabase REST API
         run: |
-          curl -sf "$SUPABASE_URL/rest/v1/" \
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SUPABASE_URL/rest/v1/" \
             -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY"
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" -eq 0 ]; then
+            echo "No response from Supabase — project may be down"
+            exit 1
+          fi
+          echo "Supabase responded — project is alive"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}

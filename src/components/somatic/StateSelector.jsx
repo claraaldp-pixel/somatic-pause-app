@@ -77,7 +77,7 @@ export default function StateSelector({ onSelect, onBack }) {
       if (!active) return;
       setCategories(buildCategories(cats || [], syms || []));
       setLoadingCategories(false);
-    });
+    }).catch(() => { if (active) setLoadingCategories(false); });
     return () => { active = false; };
   }, []);
 

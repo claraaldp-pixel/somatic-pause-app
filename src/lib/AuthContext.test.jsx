@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/api/supabaseClient';
-import { mockNoSession, mockSessionWithAccess, mockSessionNoAccess } from '@/test/mocks/supabase';
+import { mockNoSession, mockSessionWithAccess, mockSessionNoAccess, TEST_USER } from '@/test/mocks/supabase';
+import * as Sentry from '@sentry/react';
 
 vi.mock('@/api/supabaseClient', () => ({
   supabase: {
@@ -11,6 +12,10 @@ vi.mock('@/api/supabaseClient', () => ({
     },
     rpc: vi.fn(),
   },
+}));
+
+vi.mock('@sentry/react', () => ({
+  setUser: vi.fn(),
 }));
 
 function AuthConsumer() {
@@ -53,5 +58,43 @@ describe('AuthContext', () => {
     await waitFor(() => expect(screen.getByTestId('authChecked')).toHaveTextContent('true'));
     expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('false');
     expect(screen.getByTestId('authError')).toHaveTextContent('no_subscription');
+  });
+});
+
+describe('Sentry user context', () => {
+  it('sets Sentry user id when access is granted', async () => {
+    mockSessionWithAccess(supabase);
+    renderAuth();
+    await waitFor(() =>
+      expect(Sentry.setUser).toHaveBeenCalledWith({ id: TEST_USER.id })
+    );
+  });
+
+  it('sets Sentry user id when access is denied (no_subscription)', async () => {
+    mockSessionNoAccess(supabase);
+    renderAuth();
+    await waitFor(() =>
+      expect(Sentry.setUser).toHaveBeenCalledWith({ id: TEST_USER.id })
+    );
+  });
+
+  it('clears Sentry user on sign-out', async () => {
+    let authCallback;
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null } });
+    supabase.auth.onAuthStateChange.mockImplementation((callback) => {
+      authCallback = callback;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
+
+    renderAuth();
+    await waitFor(() =>
+      expect(screen.getByTestId('authChecked')).toHaveTextContent('true')
+    );
+
+    act(() => authCallback('SIGNED_OUT', null));
+    await waitFor(() => {
+      expect(Sentry.setUser).toHaveBeenCalledTimes(1);
+      expect(Sentry.setUser).toHaveBeenCalledWith(null);
+    });
   });
 });

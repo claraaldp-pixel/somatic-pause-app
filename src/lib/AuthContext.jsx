@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/api/supabaseClient';
+import * as Sentry from '@sentry/react';
 
 const AuthContext = createContext();
 
@@ -19,6 +20,9 @@ export const AuthProvider = ({ children }) => {
       check_user_id: supabaseUser.id,
       check_email: supabaseUser.email,
     });
+
+    // Tag errors with user ID regardless of subscription status — errors on Paywall are also useful
+    Sentry.setUser({ id: supabaseUser.id });
 
     if (data) {
       setUser(supabaseUser);
@@ -62,6 +66,7 @@ export const AuthProvider = ({ children }) => {
         setAuthError(null);
         setIsLoadingAuth(false);
         setAuthChecked(true);
+        Sentry.setUser(null);
       }
     });
 

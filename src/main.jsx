@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import * as Sentry from '@sentry/react'
+import posthog from 'posthog-js'
 import App from '@/App.jsx'
 import '@/index.css'
 
@@ -14,6 +15,15 @@ Sentry.init({
     return event;
   },
 });
+
+if (import.meta.env.VITE_POSTHOG_KEY) {
+  posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
+    api_host: 'https://us.i.posthog.com',
+    autocapture: false,
+    capture_pageview: false,
+    disable_session_recording: true,
+  });
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <Sentry.ErrorBoundary fallback={<p>Something went wrong. Please refresh the page.</p>}>

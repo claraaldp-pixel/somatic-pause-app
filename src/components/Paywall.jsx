@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { analytics } from "@/lib/analytics";
 import { motion } from "framer-motion";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
@@ -25,6 +26,7 @@ export default function Paywall() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("checkout") === "success") {
+      analytics.checkoutCompleted();
       setCheckingStatus(true);
       const poll = async () => {
         await checkUserAuth();
@@ -39,7 +41,12 @@ export default function Paywall() {
     }
   }, []);
 
+  useEffect(() => {
+    analytics.paywallViewed();
+  }, []);
+
   const handleStartTrial = async () => {
+    analytics.checkoutStarted();
     setLoading(true);
     setError("");
     const { data: { session } } = await supabase.auth.getSession();

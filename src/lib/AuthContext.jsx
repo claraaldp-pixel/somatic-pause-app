@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/api/supabaseClient';
 import * as Sentry from '@sentry/react';
+import posthog from 'posthog-js';
 
 const AuthContext = createContext();
 
@@ -23,6 +24,7 @@ export const AuthProvider = ({ children }) => {
 
     // Tag errors with user ID regardless of subscription status — errors on Paywall are also useful
     Sentry.setUser({ id: supabaseUser.id });
+    posthog.identify(supabaseUser.id);
 
     if (data) {
       setUser(supabaseUser);
@@ -67,6 +69,7 @@ export const AuthProvider = ({ children }) => {
         setIsLoadingAuth(false);
         setAuthChecked(true);
         Sentry.setUser(null);
+        posthog.reset();
       }
     });
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { analytics } from "@/lib/analytics";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import StateSelector from "@/components/somatic/StateSelector";
@@ -23,6 +24,7 @@ export default function Home() {
     if (p !== "exercises") setInitialExercise(null);
     setPhase(p);
     setNavOpen(false);
+    analytics.pageViewed(p);
   };
 
   const handleStateSelected = (state, score, symptoms = []) => {
@@ -30,6 +32,7 @@ export default function Home() {
     setPreScore(score);
     setSelectedSymptoms(symptoms);
     setPhase("exercises");
+    analytics.sessionStarted(state, 'state_selector');
   };
 
   const handleStartFavourite = (exercise) => {
@@ -40,6 +43,7 @@ export default function Home() {
     setInitialExercise(exercise);
     setPhase("exercises");
     setNavOpen(false);
+    analytics.sessionStarted(state, 'favourite');
   };
 
   const handleQuickStart = (state) => {
@@ -47,9 +51,11 @@ export default function Home() {
     setPreScore(5);
     setSelectedSymptoms([]);
     setPhase("exercises");
+    analytics.sessionStarted(state, 'quick_start');
   };
 
   const handleSessionComplete = async (postScore, exercisesCompleted, reflection) => {
+    analytics.sessionCompleted(selectedState, preScore, postScore, exercisesCompleted.length);
     await supabase.from("check_ins").insert({
       user_id: user.id,
       survival_state: selectedState,

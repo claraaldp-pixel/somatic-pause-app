@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/api/supabaseClient';
 import { mockNoSession, mockSessionWithAccess, mockSessionNoAccess, TEST_USER } from '@/test/mocks/supabase';
 import * as Sentry from '@sentry/react';
+import posthog from 'posthog-js';
 
 vi.mock('@/api/supabaseClient', () => ({
   supabase: {
@@ -16,6 +17,10 @@ vi.mock('@/api/supabaseClient', () => ({
 
 vi.mock('@sentry/react', () => ({
   setUser: vi.fn(),
+}));
+
+vi.mock('posthog-js', () => ({
+  default: { identify: vi.fn(), reset: vi.fn() },
 }));
 
 function AuthConsumer() {
@@ -96,5 +101,32 @@ describe('Sentry user context', () => {
       expect(Sentry.setUser).toHaveBeenCalledTimes(1);
       expect(Sentry.setUser).toHaveBeenCalledWith(null);
     });
+  });
+});
+
+describe('PostHog user context', () => {
+  it('identifies user in PostHog when access resolves', async () => {
+    mockSessionWithAccess(supabase);
+    renderAuth();
+    await waitFor(() =>
+      expect(posthog.identify).toHaveBeenCalledWith(TEST_USER.id)
+    );
+  });
+
+  it('resets PostHog user on sign-out', async () => {
+    let authCallback;
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null } });
+    supabase.auth.onAuthStateChange.mockImplementation((callback) => {
+      authCallback = callback;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
+
+    renderAuth();
+    await waitFor(() =>
+      expect(screen.getByTestId('authChecked')).toHaveTextContent('true')
+    );
+
+    act(() => authCallback('SIGNED_OUT', null));
+    await waitFor(() => expect(posthog.reset).toHaveBeenCalledTimes(1));
   });
 });

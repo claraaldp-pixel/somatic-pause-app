@@ -18,7 +18,7 @@ Sentry.init({
 
 if (import.meta.env.VITE_POSTHOG_KEY) {
   posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
-    api_host: 'https://us.i.posthog.com',
+    api_host: 'https://eu.i.posthog.com',
     autocapture: false,
     capture_pageview: false,
     disable_session_recording: true,

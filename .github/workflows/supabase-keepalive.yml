@@ -9,17 +9,24 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase REST API
+      - name: Query a real table to keep the database warm
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SUPABASE_URL/rest/v1/" \
+          # Must hit an actual table so PostgREST runs a SQL query against Postgres.
+          # A bare /rest/v1/ ping only returns the cached schema and does NOT count
+          # as database activity, so the project pauses despite the workflow going green.
+          BODY=$(curl -s -w "\n%{http_code}" \
+            "$SUPABASE_URL/rest/v1/symptom_categories?select=id&limit=1" \
             -H "apikey: $SUPABASE_ANON_KEY" \
             -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          STATUS=$(echo "$BODY" | tail -n1)
           echo "HTTP status: $STATUS"
-          if [ "$STATUS" -eq 0 ]; then
-            echo "No response from Supabase — project may be down"
+          # 200 = rows/empty (RLS may hide rows, query still ran); either way the DB was touched.
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 500 ]; then
+            echo "Supabase database was queried — project is alive"
+          else
+            echo "Unexpected status from Supabase — project may be down"
             exit 1
           fi
-          echo "Supabase responded — project is alive"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}

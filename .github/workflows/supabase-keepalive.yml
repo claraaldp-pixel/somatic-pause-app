@@ -20,11 +20,13 @@ jobs:
             -H "Authorization: Bearer $SUPABASE_ANON_KEY")
           STATUS=$(echo "$BODY" | tail -n1)
           echo "HTTP status: $STATUS"
-          # 200 = rows/empty (RLS may hide rows, query still ran); either way the DB was touched.
-          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 500 ]; then
+          # Only a real 2xx from a known-readable table proves Postgres was queried.
+          # A paused or still-waking project returns 404 (schema cache not loaded) or
+          # 5xx — treat anything but 2xx as a failure so the run goes red, not green.
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 300 ]; then
             echo "Supabase database was queried — project is alive"
           else
-            echo "Unexpected status from Supabase — project may be down"
+            echo "Unexpected status $STATUS — project may be paused or unavailable"
             exit 1
           fi
         env:

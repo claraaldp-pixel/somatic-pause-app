@@ -29,11 +29,17 @@ const C = {
   border:       "#e8e4dc",
 };
 
-function VideoPlayer({ src }) {
+function getYouTubeId(url) {
+  const match = url?.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^&\n?#/]+)/);
+  return match ? match[1] : null;
+}
+
+function VideoPlayer({ src, videoType }) {
   const ref = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const youtubeId = videoType === "youtube" ? getYouTubeId(src) : null;
 
   const toggle = () => {
     if (!ref.current) return;
@@ -47,12 +53,42 @@ function VideoPlayer({ src }) {
   };
 
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || youtubeId) return;
     const timer = setTimeout(() => {
       if (!loaded) setError(true);
     }, 8000);
     return () => clearTimeout(timer);
-  }, [playing, loaded]);
+  }, [playing, loaded, youtubeId]);
+
+  if (youtubeId) {
+    if (playing) {
+      return (
+        <div style={{ position: "relative", paddingBottom: "177.78%", background: "#000" }}>
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1`}
+            title="Exercise video"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={() => setPlaying(true)}
+        aria-label="Play exercise video"
+        style={{ width: "100%", minHeight: 360, border: 0, background: "#2d2840", color: "#fff", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}
+      >
+        <span style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Play style={{ width: 28, height: 28, marginLeft: 4 }} fill="currentColor" />
+        </span>
+        <span style={{ fontSize: 14, fontWeight: 700 }}>Play exercise video</span>
+      </button>
+    );
+  }
 
   if (error) {
     return (
@@ -541,7 +577,7 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
           {video?.video_type === "audio" ? (
             <AudioPlayer src={video.video_url} />
           ) : video ? (
-            <VideoPlayer src={video.video_url} />
+            <VideoPlayer src={video.video_url} videoType={video.video_type} />
           ) : (
             <div style={{ padding: "44px 28px 36px", textAlign: "center" }}>
               <div style={{ width: 80, height: 80, borderRadius: "50%", background: C.lavenderLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 40 }}>{exercise.emoji}</div>
@@ -570,7 +606,7 @@ function ExerciseGuide({ exercise, onComplete, onBack, video }) {
           {video?.video_type === "audio" ? (
             <AudioPlayer src={video.video_url} />
           ) : video ? (
-            <VideoPlayer src={video.video_url} />
+            <VideoPlayer src={video.video_url} videoType={video.video_type} />
           ) : (
             <div style={{ padding: "44px 28px 36px", textAlign: "center" }}>
               <div style={{ width: 80, height: 80, borderRadius: "50%", background: C.lavenderLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 40 }}>

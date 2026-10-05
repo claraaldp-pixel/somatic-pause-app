@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/api/supabaseClient';
+import { neonAuth, supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import SomaticLogo from "@/components/somatic/SomaticLogo";
@@ -50,10 +50,11 @@ export default function Login() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { error } = await neonAuth.signUp.email({
       email: email.trim().toLowerCase(),
       password,
-      options: { emailRedirectTo: window.location.origin },
+      name: email.trim().split('@')[0],
+      callbackURL: window.location.origin,
     });
     if (error) setError(error.message);
     else setStep('signup-sent');
@@ -76,9 +77,21 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const token = new URLSearchParams(window.location.search).get('token');
+    if (!token) {
+      setError('This password reset link is invalid or has expired.');
+      setLoading(false);
+      return;
+    }
+    const { error } = await neonAuth.resetPassword({
+      newPassword,
+      token,
+    });
     if (error) setError(error.message);
-    else setStep('login');
+    else {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setStep('login');
+    }
     setLoading(false);
   };
 

@@ -6,7 +6,10 @@ import posthog from 'posthog-js';
 const AuthContext = createContext();
 
 const isRecoveryUrl = () =>
-  typeof window !== 'undefined' && window.location.hash.includes('type=recovery');
+  typeof window !== 'undefined' && (
+    new URLSearchParams(window.location.search).has('token')
+    || window.location.hash.includes('type=recovery')
+  );
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -40,7 +43,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // If this is a recovery redirect, skip getSession — wait for PASSWORD_RECOVERY event
+    // A Neon reset link returns with ?token=... and does not create a session.
     if (!isRecoveryUrl()) {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {

@@ -15,20 +15,20 @@ Instead of guessing what you need, users select the physical/emotional symptoms 
 - **History & pattern insights** — past check-ins and trends over time (`CheckInHistory`, `PatternInsights`).
 - **Favourites** — like individual exercises to relaunch them directly later (`Favourites`).
 - **Subscription management** — trial/renewal info and a "Manage subscription" link to the Stripe Customer Portal, or a complimentary-access message for whitelisted users (`Settings`).
-- **Admin invites** — an admin (set via `VITE_ADMIN_EMAIL`) can invite people by email; this whitelists them and sends a Supabase auth invite (`AdminInvite`, backed by the `invite-user` Edge Function). Admins also manage the exercise video library (`ManageVideos`).
+- **Admin invites** — an admin can invite people by email; this whitelists them and sends a Neon Auth password-setup link (`AdminInvite`, backed by a Vercel function). Admins also manage the exercise video library (`ManageVideos`).
 
 ## How it works
 
-- **Frontend** — React 18 + Vite talks directly to Supabase (Postgres, Auth, RLS) for check-ins, exercises, and profile data.
+- **Frontend** — React 18 + Vite uses Neon Auth and the Neon Data API for check-ins, exercises, and profile data.
 - **Access control** — a `has_access()` Postgres RPC grants access if a user is whitelisted (complimentary access) or has an active/trialing subscription. Row-level security is enabled on `profiles`, `check_ins`, `exercise_videos`, `whitelist`, and `subscriptions`. See [`docs/phase1-handoff.md`](docs/phase1-handoff.md) for the implementation notes.
-- **Payments** — Stripe Checkout (trial signup) and the Stripe Customer Portal, via three Supabase Edge Functions: `create-checkout-session`, `stripe-webhook`, `create-portal-session`.
+- **Payments** — Stripe Checkout (trial signup) and the Stripe Customer Portal, via Vercel server functions.
 - **Monitoring** — Sentry (error tracking) and PostHog (product analytics: session started/completed, paywall/checkout events) are wired in at the app root and are optional locally (no-op if their env vars aren't set).
 
 ## Tech stack
 
 - **Frontend**: React 18, Vite, Tailwind CSS, Radix UI, Framer Motion
-- **Backend**: Supabase (Postgres + RLS, Auth, Edge Functions)
-- **Payments**: Stripe Checkout + Customer Portal, via Supabase Edge Functions
+- **Backend**: Neon (Postgres + RLS, managed Auth, Data API) and Vercel functions
+- **Payments**: Stripe Checkout + Customer Portal, via Vercel functions
 - **Monitoring**: Sentry, PostHog
 - **Testing**: Vitest + Testing Library
 
@@ -36,7 +36,7 @@ Instead of guessing what you need, users select the physical/emotional symptoms 
 
 ```bash
 npm install
-cp .env.example .env   # fill in your Supabase project URL/key, see below
+cp .env.example .env   # fill in your Neon and Stripe values, see below
 npm run dev
 ```
 
@@ -46,10 +46,17 @@ Documented in [`.env.example`](.env.example):
 
 | Variable | Description |
 |---|---|
-| `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Supabase anon (public) key |
+| `NEON_DATABASE_URL` | Server-only Neon Postgres connection string |
+| `NEON_AUTH_URL` | Server-side Neon Auth base URL |
+| `VITE_NEON_AUTH_URL` | Browser-safe Neon Auth base URL |
+| `VITE_NEON_DATA_API_URL` | Browser-safe Neon Data API URL |
 | `VITE_ADMIN_EMAIL` | Email address granted admin access (video management, invites) |
-| `VITE_STRIPE_TRIAL_DAYS` | Free trial length shown on the paywall (should match the `STRIPE_TRIAL_DAYS` Edge Function secret) |
+| `APP_URL` | Canonical app URL used for auth and Stripe redirects |
+| `STRIPE_SECRET_KEY` | Stripe test-mode secret key (server only) |
+| `STRIPE_PRICE_ID` | Stripe test-mode recurring price ID |
+| `STRIPE_WEBHOOK_SECRET` | Stripe signing secret for `/api/stripe-webhook` |
+| `STRIPE_TRIAL_DAYS` | Server-side trial length |
+| `VITE_STRIPE_TRIAL_DAYS` | Trial length displayed in the browser |
 
 Used in the code but **not yet listed** in `.env.example` — both optional for local dev, the app runs fine without them:
 
@@ -60,7 +67,7 @@ Used in the code but **not yet listed** in `.env.example` — both optional for 
 
 ### Stripe setup
 
-Subscriptions run through Stripe Checkout + the Customer Portal via Supabase Edge Functions. Full step-by-step setup (product/price creation, Edge Function deploy, webhook config) is in [`docs/stripe-setup.md`](docs/stripe-setup.md).
+Subscriptions run through Stripe Checkout + the Customer Portal via Vercel functions. Stripe should remain in test mode until the full migration is verified.
 
 ## Available scripts
 
@@ -85,11 +92,12 @@ src/
   entities/              # legacy schema reference (CheckIn, ExerciseVideo) —
                           # not the live source of truth, see supabase/migrations
   lib/                   # AuthContext, analytics, other shared logic
-  api/                   # Supabase client
-supabase/
+  api/                   # Neon client (temporary legacy filename)
+api/                     # Vercel functions (Stripe and invites)
+neon/
   migrations/            # database schema + RLS policies
-  functions/             # Edge Functions (Stripe checkout/webhook/portal, invite-user)
+supabase/                 # legacy source retained during migration
 docs/                    # setup and handoff notes
 ```
 
-Content that drives check-ins and practices lives in Supabase tables (`symptom_categories`, `symptoms`, `exercises`, `exercise_videos`), not in `src/entities/` — those JSON files are left over from the app's original no-code scaffold and don't reflect the current schema.
+Content that drives check-ins and practices lives in Neon tables (`symptom_categories`, `symptoms`, `exercises`, `exercise_videos`), not in `src/entities/` — those JSON files are left over from the app's original no-code scaffold and don't reflect the current schema.

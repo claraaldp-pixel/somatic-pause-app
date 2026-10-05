@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/api/supabaseClient";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Upload, Link, ChevronLeft, Loader2 } from "lucide-react";
+import { Plus, Trash2, Link, ChevronLeft } from "lucide-react";
 import { createPageUrl } from "@/utils";
 
 const STATE_LABELS = {
@@ -17,7 +17,6 @@ export default function ManageVideos() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ exercise_id: "", survival_state: "", exercise_title: "", video_url: "", video_type: "youtube" });
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [allExercises, setAllExercises] = useState([]);
 
@@ -49,26 +48,6 @@ export default function ManageVideos() {
     if (ex) {
       setForm((f) => ({ ...f, exercise_id: exerciseId, survival_state: ex.survival_state, exercise_title: ex.title }));
     }
-  };
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploading(true);
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}.${fileExt}`;
-
-    const { error } = await supabase.storage
-      .from('exercise-videos')
-      .upload(fileName, file);
-
-    if (!error) {
-      const { data: { publicUrl } } = supabase.storage
-        .from('exercise-videos')
-        .getPublicUrl(fileName);
-      setForm((f) => ({ ...f, video_url: publicUrl, video_type: 'upload' }));
-    }
-    setUploading(false);
   };
 
   const handleSave = async () => {
@@ -140,7 +119,7 @@ export default function ManageVideos() {
                 <div>
                   <label className="text-xs text-[#9C8878] font-medium mb-1.5 block">Video source</label>
                   <div className="flex gap-2">
-                    {["youtube", "vimeo", "upload"].map((type) => (
+                    {["youtube", "vimeo"].map((type) => (
                       <button
                         key={type}
                         onClick={() => setForm((f) => ({ ...f, video_type: type, video_url: "" }))}
@@ -150,47 +129,25 @@ export default function ManageVideos() {
                             : "bg-white text-[#9C8878] border-[#EDE8E2] hover:border-[#C5A882]"
                         }`}
                       >
-                        {type === "upload" ? "Upload file" : type}
+                        {type}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {form.video_type !== "upload" ? (
-                  <div>
-                    <label className="text-xs text-[#9C8878] font-medium mb-1.5 block">
-                      <Link className="inline w-3 h-3 mr-1" />
-                      {form.video_type === "youtube" ? "YouTube URL" : "Vimeo URL"}
-                    </label>
-                    <input
-                      type="url"
-                      value={form.video_url}
-                      onChange={(e) => setForm((f) => ({ ...f, video_url: e.target.value }))}
-                      placeholder={form.video_type === "youtube" ? "https://youtube.com/watch?v=..." : "https://vimeo.com/..."}
-                      className="w-full border border-[#EDE8E2] rounded-xl px-3 py-2.5 text-sm text-[#4A3728] outline-none focus:border-[#C5A882]"
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <label className="text-xs text-[#9C8878] font-medium mb-1.5 block">
-                      <Upload className="inline w-3 h-3 mr-1" />
-                      Upload video file
-                    </label>
-                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[#EDE8E2] rounded-xl cursor-pointer hover:border-[#C5A882] transition-colors">
-                      {uploading ? (
-                        <Loader2 className="w-5 h-5 text-[#C5A882] animate-spin" />
-                      ) : form.video_url ? (
-                        <span className="text-xs text-[#1A5A1A] font-medium">✓ Video uploaded</span>
-                      ) : (
-                        <>
-                          <Upload className="w-5 h-5 text-[#BEB0A5] mb-1" />
-                          <span className="text-xs text-[#BEB0A5]">Click to upload MP4, MOV, WebM</span>
-                        </>
-                      )}
-                      <input type="file" accept="video/*" className="hidden" onChange={handleFileUpload} />
-                    </label>
-                  </div>
-                )}
+                <div>
+                  <label className="text-xs text-[#9C8878] font-medium mb-1.5 block">
+                    <Link className="inline w-3 h-3 mr-1" />
+                    {form.video_type === "youtube" ? "YouTube URL" : "Vimeo URL"}
+                  </label>
+                  <input
+                    type="url"
+                    value={form.video_url}
+                    onChange={(e) => setForm((f) => ({ ...f, video_url: e.target.value }))}
+                    placeholder={form.video_type === "youtube" ? "https://youtube.com/watch?v=..." : "https://vimeo.com/..."}
+                    className="w-full border border-[#EDE8E2] rounded-xl px-3 py-2.5 text-sm text-[#4A3728] outline-none focus:border-[#C5A882]"
+                  />
+                </div>
 
                 <div className="flex gap-3 pt-2">
                   <button

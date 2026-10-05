@@ -52,7 +52,7 @@ export default function Paywall() {
     const { data: { session } } = await supabase.auth.getSession();
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`,
+        "/api/create-checkout-session",
         {
           method: "POST",
           headers: {

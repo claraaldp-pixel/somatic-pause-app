@@ -35,7 +35,7 @@ export default function AdminInvite({ onBack }) {
 
     const { data: { session } } = await supabase.auth.getSession();
     const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-user`,
+      "/api/invite-user",
       {
         method: "POST",
         headers: {

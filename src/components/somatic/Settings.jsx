@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
-import { supabase } from "@/api/supabaseClient";
+import { neonAuth, supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 
 const C = {
@@ -76,7 +76,7 @@ export default function Settings({ onBack }) {
   const { user, logout } = useAuth();
 
   // Display name
-  const [displayName, setDisplayName] = useState(user?.user_metadata?.full_name || "");
+  const [displayName, setDisplayName] = useState(user?.user_metadata?.displayName || user?.user_metadata?.full_name || "");
   const [nameLoading, setNameLoading] = useState(false);
   const [nameMsg, setNameMsg] = useState("");
 
@@ -86,6 +86,7 @@ export default function Settings({ onBack }) {
   const [emailMsg, setEmailMsg] = useState("");
 
   // Password
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -109,7 +110,7 @@ export default function Settings({ onBack }) {
   const handleSaveName = async () => {
     if (!displayName.trim()) { setNameMsg("!Name can't be empty."); return; }
     setNameLoading(true); setNameMsg("");
-    const { error } = await supabase.auth.updateUser({ data: { full_name: displayName.trim() } });
+    const { error } = await neonAuth.updateUser({ name: displayName.trim() });
     setNameLoading(false);
     setNameMsg(error ? `!${error.message}` : "Display name updated.");
   };
@@ -117,7 +118,10 @@ export default function Settings({ onBack }) {
   const handleChangeEmail = async () => {
     if (!newEmail.trim()) { setEmailMsg("!Enter a new email address."); return; }
     setEmailLoading(true); setEmailMsg("");
-    const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
+    const { error } = await neonAuth.changeEmail({
+      newEmail: newEmail.trim().toLowerCase(),
+      callbackURL: window.location.origin,
+    });
     setEmailLoading(false);
     if (error) { setEmailMsg(`!${error.message}`); return; }
     setEmailMsg("Confirmation sent to your new email. Click the link to confirm.");
@@ -125,15 +129,20 @@ export default function Settings({ onBack }) {
   };
 
   const handleChangePassword = async () => {
+    if (!currentPassword) { setPasswordMsg("!Enter your current password."); return; }
     if (!newPassword) { setPasswordMsg("!Enter a new password."); return; }
     if (newPassword.length < 8) { setPasswordMsg("!Password must be at least 8 characters."); return; }
     if (newPassword !== confirmPassword) { setPasswordMsg("!Passwords don't match."); return; }
     setPasswordLoading(true); setPasswordMsg("");
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const { error } = await neonAuth.changePassword({
+      currentPassword,
+      newPassword,
+      revokeOtherSessions: true,
+    });
     setPasswordLoading(false);
     if (error) { setPasswordMsg(`!${error.message}`); return; }
     setPasswordMsg("Password updated.");
-    setNewPassword(""); setConfirmPassword("");
+    setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
   };
 
   const handleManageSubscription = async () => {
@@ -141,7 +150,7 @@ export default function Settings({ onBack }) {
     const { data: { session } } = await supabase.auth.getSession();
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
+        "/api/create-portal-session",
         {
           method: "POST",
           headers: {
@@ -237,6 +246,7 @@ export default function Settings({ onBack }) {
 
       {/* Password */}
       <Card title="Change password">
+        <Field label="Current password" type="password" value={currentPassword} onChange={setCurrentPassword} placeholder="Current password" />
         <Field label="New password" type="password" value={newPassword} onChange={setNewPassword} placeholder="Min. 8 characters" />
         <Field label="Confirm new password" type="password" value={confirmPassword} onChange={setConfirmPassword} placeholder="Repeat password" />
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

@@ -9,7 +9,8 @@ subscriptions, and favourites remain attached to the correct person.
 2. Import the backed-up Supabase users into `neon_auth.user` using their original IDs.
 3. Import `.migration-backups/supabase-2026-10-05/public-data.sql`.
 4. Apply `migrations/002_finalize_auth.sql`.
-5. Verify row counts and foreign keys.
+5. Apply `migrations/003_fix_access_email_lookup.sql`.
+6. Verify row counts and foreign keys.
 
 Supabase password hashes are bcrypt, while managed Neon Auth uses Better Auth's
 managed password configuration. Existing users therefore keep their account and

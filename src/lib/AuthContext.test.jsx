@@ -24,20 +24,25 @@ vi.mock('posthog-js', () => ({
 }));
 
 function AuthConsumer() {
-  const { user, isAuthenticated, authError, authChecked } = useAuth();
+  const { user, isAuthenticated, authError, authChecked, isLoadingAuth, isPasswordRecovery } = useAuth();
   return (
     <div>
       <span data-testid="user">{user ? user.email : 'null'}</span>
       <span data-testid="isAuthenticated">{String(isAuthenticated)}</span>
       <span data-testid="authError">{authError ? authError.type : 'null'}</span>
       <span data-testid="authChecked">{String(authChecked)}</span>
+      <span data-testid="isLoadingAuth">{String(isLoadingAuth)}</span>
+      <span data-testid="isPasswordRecovery">{String(isPasswordRecovery)}</span>
     </div>
   );
 }
 
 const renderAuth = () => render(<AuthProvider><AuthConsumer /></AuthProvider>);
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  window.history.replaceState({}, '', '/');
+});
 
 describe('AuthContext', () => {
   it('no session: user is null, isAuthenticated is false', async () => {
@@ -63,6 +68,20 @@ describe('AuthContext', () => {
     await waitFor(() => expect(screen.getByTestId('authChecked')).toHaveTextContent('true'));
     expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('false');
     expect(screen.getByTestId('authError')).toHaveTextContent('no_subscription');
+  });
+
+  it('password recovery token: stops loading and shows the recovery flow', async () => {
+    window.history.replaceState({}, '', '/?token=reset-token');
+    supabase.auth.onAuthStateChange.mockReturnValue({
+      data: { subscription: { unsubscribe: vi.fn() } },
+    });
+
+    renderAuth();
+
+    await waitFor(() => expect(screen.getByTestId('authChecked')).toHaveTextContent('true'));
+    expect(screen.getByTestId('isLoadingAuth')).toHaveTextContent('false');
+    expect(screen.getByTestId('isPasswordRecovery')).toHaveTextContent('true');
+    expect(supabase.auth.getSession).not.toHaveBeenCalled();
   });
 });
 

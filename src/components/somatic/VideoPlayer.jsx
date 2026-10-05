@@ -2,7 +2,7 @@ export default function VideoPlayer({ videoUrl, videoType }) {
   if (!videoUrl) return null;
 
   const getYouTubeId = (url) => {
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+    const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^&\n?#/]+)/);
     return match ? match[1] : null;
   };
 

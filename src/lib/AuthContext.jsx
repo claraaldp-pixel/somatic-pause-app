@@ -44,7 +44,11 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // A Neon reset link returns with ?token=... and does not create a session.
-    if (!isRecoveryUrl()) {
+    if (isRecoveryUrl()) {
+      setIsPasswordRecovery(true);
+      setIsLoadingAuth(false);
+      setAuthChecked(true);
+    } else {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
           checkAccess(session.user);

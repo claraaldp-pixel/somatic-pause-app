@@ -12,6 +12,14 @@ export default async function handler(req, res) {
 
     const sql = getSql();
     const stripe = getStripe();
+    const [account] = await sql`
+      SELECT email
+      FROM neon_auth."user"
+      WHERE id = ${user.sub}::uuid
+        AND COALESCE(banned, false) = false
+    `;
+    if (!account) return json(res, 401, { error: 'Unauthorized.' });
+
     const [existingSubscription] = await sql`
       SELECT stripe_customer_id
       FROM public.subscriptions
@@ -21,7 +29,7 @@ export default async function handler(req, res) {
     let customerId = existingSubscription?.stripe_customer_id;
     if (!customerId) {
       const customer = await stripe.customers.create({
-        email: user.email,
+        email: account.email,
         metadata: { user_id: user.sub },
       });
       customerId = customer.id;

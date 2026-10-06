@@ -1,9 +1,11 @@
+import { browserAuthUrl } from '@/api/neonConfig';
+
 const DEFAULT_TIMEOUT_MS = 12_000;
 
 export async function resetPasswordWithToken({
   newPassword,
   token,
-  authUrl = import.meta.env.VITE_NEON_AUTH_URL,
+  authUrl = browserAuthUrl,
   timeoutMs = DEFAULT_TIMEOUT_MS,
   fetchImpl = globalThis.fetch,
 }) {

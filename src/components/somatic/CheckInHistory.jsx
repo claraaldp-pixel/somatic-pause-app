@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
-import { motion } from "framer-motion";
-import { format, startOfWeek, startOfMonth, isAfter, parseISO } from "date-fns";
-import { Plus } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { format } from "date-fns";
+import { ChevronDown, Plus } from "lucide-react";
 import PatternInsights from "./PatternInsights";
+import {
+  buildPeriodOptions,
+  filterCheckinsByPeriod,
+  getCheckinDate,
+  getPeriodKey,
+} from "@/lib/progressPeriods";
 
 const C = {
   lavenderDark: "oklch(50% 0.13 295)",
@@ -24,21 +30,6 @@ const STATE_INFO = {
   safe:   { label: "Safe",    emoji: "🌿", bg: "#e0ecdc", color: "#5a8a54" },
 };
 
-function computeStreak(dates) {
-  if (!dates.length) return 0;
-  const sorted = [...new Set(dates)].sort().reverse();
-  const today = new Date().toISOString().split("T")[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-  if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
-  let streak = 1;
-  for (let i = 1; i < sorted.length; i++) {
-    const diff = Math.round((new Date(sorted[i - 1]) - new Date(sorted[i])) / 86400000);
-    if (diff === 1) streak++;
-    else break;
-  }
-  return streak;
-}
-
 function mostUsedStates(checkins) {
   const counts = /** @type {Record<string,number>} */ ({});
   checkins.forEach((c) => { if (c.survival_state) counts[c.survival_state] = (counts[c.survival_state] || 0) + 1; });
@@ -53,42 +44,53 @@ export default function CheckInHistory({ onNewSession }) {
   const [checkins, setCheckins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("month");
+  const [selectedPeriod, setSelectedPeriod] = useState(() => getPeriodKey("month"));
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     if (!user) return;
     supabase
       .from("check_ins").select("*").eq("user_id", user.id)
-      .order("created_at", { ascending: false }).limit(50)
+      .order("created_at", { ascending: false })
       .then(({ data }) => { setCheckins(data || []); setLoading(false); });
   }, [user]);
 
-  const filtered = useMemo(() => {
-    if (range === "all") return checkins;
-    const cutoff = range === "week"
-      ? startOfWeek(new Date(), { weekStartsOn: 1 })
-      : startOfMonth(new Date());
-    return checkins.filter((c) => c.date && isAfter(parseISO(c.date), cutoff));
-  }, [checkins, range]);
+  const periodOptions = useMemo(
+    () => buildPeriodOptions(checkins, range),
+    [checkins, range],
+  );
+  const filtered = useMemo(
+    () => filterCheckinsByPeriod(checkins, range, selectedPeriod),
+    [checkins, range, selectedPeriod],
+  );
+  const periodLabel = range === "all"
+    ? "All time"
+    : periodOptions.find(({ value }) => value === selectedPeriod)?.label.replace(/^This (week|month) · /, "") || "Selected period";
 
-  const totalSessions = checkins.length;
-  const totalExercises = checkins.reduce((sum, c) => sum + (c.exercises_completed?.length || 0), 0);
-  const scoredCheckins = checkins.filter((c) => c.post_score && c.pre_score);
+  const totalSessions = filtered.length;
+  const totalExercises = filtered.reduce((sum, c) => sum + (c.exercises_completed?.length || 0), 0);
+  const scoredCheckins = filtered.filter((c) => Number.isFinite(c.post_score) && Number.isFinite(c.pre_score));
   const avgImprovement = scoredCheckins.length
     ? Math.round(scoredCheckins.reduce((acc, c) => acc + (c.post_score - c.pre_score), 0) / scoredCheckins.length * 10) / 10
-    : 0;
-  const streak = computeStreak(checkins.map((c) => c.date).filter(Boolean));
-  const topStates = mostUsedStates(checkins);
+    : null;
+  const topStates = mostUsedStates(filtered);
   const topEmoji = topStates.length ? topStates.map((s) => s.emoji).join(" ") : "—";
   const topLabel = topStates.length ? topStates.map((s) => s.label).join(" · ") : "No sessions yet";
   const topAccent = topStates.length === 1 ? topStates[0].color : C.textMid;
   const topBg = topStates.length === 1 ? topStates[0].bg : "#f5f3ef";
 
   const stats = [
-    { label: "TOTAL SESSIONS", value: String(totalSessions), sub: "All time",        accent: "#5a3e8a", bg: C.lavenderLight },
-    { label: "TOTAL EXERCISES", value: String(totalExercises), sub: "Completed",     accent: "#2e5a28", bg: "#e0ecdc" },
-    { label: "CURRENT STREAK",  value: streak > 0 ? `${streak} 🔥` : "—", sub: streak > 0 ? "Days in a row" : "Start today", accent: "#d4874a", bg: "#fdf0e0" },
+    { label: "SESSIONS", value: String(totalSessions), sub: periodLabel, accent: "#5a3e8a", bg: C.lavenderLight },
+    { label: "EXERCISES", value: String(totalExercises), sub: "Completed", accent: "#2e5a28", bg: "#e0ecdc" },
+    { label: "AVERAGE SHIFT", value: avgImprovement === null ? "—" : `${avgImprovement >= 0 ? "+" : ""}${avgImprovement}`, sub: "Regulation score", accent: "#d4874a", bg: "#fdf0e0" },
     { label: "MOST COMMON",     value: topEmoji, sub: topLabel, accent: topAccent, bg: topBg },
   ];
+
+  const selectRange = (nextRange) => {
+    setRange(nextRange);
+    setExpandedId(null);
+    if (nextRange !== "all") setSelectedPeriod(getPeriodKey(nextRange));
+  };
 
   return (
     <div style={{ paddingTop: 16 }}>
@@ -96,15 +98,15 @@ export default function CheckInHistory({ onNewSession }) {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4" style={{ marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: 26, fontWeight: 800, color: C.text, letterSpacing: "-0.5px", marginBottom: 4 }}>Your Progress</h2>
-          <p style={{ fontSize: 13, color: C.textLight }}>{format(new Date(), "MMMM yyyy")}</p>
+          <p style={{ fontSize: 13, color: C.textLight }}>{periodLabel}</p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
           {/* Range filter */}
           <div style={{ display: "flex", gap: 4, background: "#fff", borderRadius: 20, padding: 4, border: `1px solid ${C.border}` }}>
             {[["week", "Week"], ["month", "Month"], ["all", "All"]].map(([val, lbl]) => (
               <button
                 key={val}
-                onClick={() => setRange(val)}
+                onClick={() => selectRange(val)}
                 style={{
                   padding: "5px 14px", borderRadius: 16,
                   fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer",
@@ -117,6 +119,26 @@ export default function CheckInHistory({ onNewSession }) {
               </button>
             ))}
           </div>
+          {range !== "all" && (
+            <select
+              aria-label={`Choose ${range}`}
+              value={selectedPeriod}
+              onChange={(event) => {
+                setSelectedPeriod(event.target.value);
+                setExpandedId(null);
+              }}
+              style={{
+                maxWidth: 220, background: "#fff", color: C.textMid,
+                border: `1px solid ${C.border}`, borderRadius: 12,
+                padding: "9px 12px", fontSize: 12, fontWeight: 600,
+                fontFamily: "inherit", cursor: "pointer", outline: "none",
+              }}
+            >
+              {periodOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          )}
           <button
             onClick={onNewSession}
             style={{
@@ -134,7 +156,7 @@ export default function CheckInHistory({ onNewSession }) {
       </div>
 
       {/* 4 stat cards */}
-      {totalSessions > 0 && (
+      {checkins.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: 10, marginBottom: 24 }}>
           {stats.map((s, i) => (
             <div key={i} style={{ background: s.bg, borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(0,0,0,0.05)" }}>
@@ -147,7 +169,7 @@ export default function CheckInHistory({ onNewSession }) {
       )}
 
       {/* Patterns — states + symptoms (uses range filter internally now driven from parent) */}
-      {totalSessions > 0 && (
+      {checkins.length > 0 && (
         <PatternInsights checkins={filtered} hideRangePicker />
       )}
 
@@ -175,59 +197,106 @@ export default function CheckInHistory({ onNewSession }) {
         </motion.div>
       )}
 
-      {/* Recent sessions — compact list */}
+      {/* Sessions for the selected period */}
       {checkins.length > 0 && (
         <div style={{ marginTop: 8 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 12 }}>Recent sessions</p>
-          <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-            {filtered.slice(0, 8).map((checkin, i) => {
-              const info = STATE_INFO[checkin.survival_state] || {};
-              const shift = (checkin.pre_score && checkin.post_score) ? checkin.post_score - checkin.pre_score : null;
-              return (
-                <motion.div
-                  key={checkin.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.04 }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 12,
-                    padding: "12px 18px",
-                    borderBottom: i < filtered.slice(0, 8).length - 1 ? `1px solid ${C.border}` : "none",
-                  }}
-                >
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: info.color || C.textLight, flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{info.emoji} {info.label}</span>
-                      <span style={{ fontSize: 11, color: C.textLight }}>·</span>
-                      <span style={{ fontSize: 11, color: C.textLight }}>
-                        {checkin.date ? format(new Date(checkin.date), "MMM d") : ""}
-                      </span>
-                    </div>
-                    {checkin.exercises_completed?.length > 0 && (
-                      <span style={{ fontSize: 11, color: C.textLight }}>
-                        {checkin.exercises_completed.length} exercise{checkin.exercises_completed.length !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </div>
-                  {shift !== null && (
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
-                      background: shift >= 0 ? "#e0ecdc" : "#fde8e4",
-                      color: shift >= 0 ? "#2e5a28" : "#c97a85",
-                    }}>
-                      {shift >= 0 ? `+${shift}` : shift}
-                    </span>
-                  )}
-                  {checkin.exercises_completed?.length > 0 && (
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 6, background: info.bg || "#f0ede8", color: info.color || C.textMid, flexShrink: 0 }}>
-                      {info.label}
-                    </span>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
+          <p style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 12 }}>
+            Sessions · {filtered.length}
+          </p>
+          {filtered.length === 0 ? (
+            <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${C.border}`, padding: "28px 20px", textAlign: "center" }}>
+              <p style={{ fontSize: 13, color: C.textMid }}>No sessions in {periodLabel.toLowerCase()}.</p>
+            </div>
+          ) : (
+            <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+              {filtered.map((checkin, i) => {
+                const info = STATE_INFO[checkin.survival_state] || {};
+                const hasScores = Number.isFinite(checkin.pre_score) && Number.isFinite(checkin.post_score);
+                const shift = hasScores ? checkin.post_score - checkin.pre_score : null;
+                const sessionDate = getCheckinDate(checkin);
+                const isExpanded = expandedId === checkin.id;
+                const notes = checkin.reflection?.trim();
+                return (
+                  <motion.div
+                    key={checkin.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: Math.min(i * 0.04, 0.3) }}
+                    style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none" }}
+                  >
+                    <button
+                      type="button"
+                      aria-expanded={isExpanded}
+                      onClick={() => setExpandedId(isExpanded ? null : checkin.id)}
+                      style={{
+                        width: "100%", display: "flex", alignItems: "center", gap: 12,
+                        padding: "13px 18px", background: "transparent", border: "none",
+                        cursor: "pointer", textAlign: "left", fontFamily: "inherit",
+                      }}
+                    >
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: info.color || C.textLight, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{info.emoji} {info.label}</span>
+                          <span style={{ fontSize: 11, color: C.textLight }}>·</span>
+                          <span style={{ fontSize: 11, color: C.textLight }}>
+                            {sessionDate ? format(sessionDate, "MMM d, yyyy") : "Date unavailable"}
+                          </span>
+                          {notes && (
+                            <span style={{ fontSize: 10, fontWeight: 700, color: C.lavenderDark, background: C.lavenderLight, borderRadius: 6, padding: "2px 6px" }}>
+                              Notes
+                            </span>
+                          )}
+                        </div>
+                        {checkin.exercises_completed?.length > 0 && (
+                          <span style={{ fontSize: 11, color: C.textLight }}>
+                            {checkin.exercises_completed.length} exercise{checkin.exercises_completed.length !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                      </div>
+                      {shift !== null && (
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
+                          background: shift >= 0 ? "#e0ecdc" : "#fde8e4",
+                          color: shift >= 0 ? "#2e5a28" : "#c97a85",
+                        }}>
+                          {shift >= 0 ? `+${shift}` : shift}
+                        </span>
+                      )}
+                      <ChevronDown
+                        aria-hidden="true"
+                        style={{
+                          width: 15, height: 15, color: C.textLight, flexShrink: 0,
+                          transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                          transition: "transform 0.2s",
+                        }}
+                      />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          style={{ overflow: "hidden" }}
+                        >
+                          <div style={{ margin: "0 18px 14px 38px", padding: "12px 14px", background: "#f8f6fb", borderRadius: 10 }}>
+                            <p style={{ fontSize: 10, fontWeight: 700, color: C.lavenderDark, textTransform: "uppercase", letterSpacing: "0.7px", marginBottom: 5 }}>
+                              Session notes
+                            </p>
+                            <p style={{ fontSize: 13, color: notes ? C.textMid : C.textLight, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                              {notes || "No notes were added to this session."}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

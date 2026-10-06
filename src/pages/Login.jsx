@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { neonAuth, supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { resetPasswordWithToken } from '@/api/neonPasswordReset';
+import { signInWithEmail } from '@/api/neonSignIn';
 import { motion, AnimatePresence } from 'framer-motion';
 import SomaticLogo from "@/components/somatic/SomaticLogo";
 
@@ -35,12 +36,19 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-    if (error) setError(error.message === 'Invalid login credentials' ? 'Incorrect email or password.' : error.message);
-    setLoading(false);
+    try {
+      await signInWithEmail({
+        authClient: neonAuth,
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      window.location.reload();
+    } catch (loginError) {
+      const isInvalidCredentials = /invalid.*(?:login|email|password)/i.test(loginError.message);
+      setError(isInvalidCredentials ? 'Incorrect email or password.' : loginError.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSignup = async (e) => {

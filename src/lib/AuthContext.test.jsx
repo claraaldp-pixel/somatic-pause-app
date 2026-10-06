@@ -11,7 +11,6 @@ vi.mock('@/api/supabaseClient', () => ({
       getSession: vi.fn(),
       onAuthStateChange: vi.fn(),
     },
-    rpc: vi.fn(),
   },
 }));
 
@@ -39,8 +38,13 @@ function AuthConsumer() {
 
 const renderAuth = () => render(<AuthProvider><AuthConsumer /></AuthProvider>);
 
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn());
+});
+
 afterEach(() => {
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
   window.history.replaceState({}, '', '/');
 });
 
@@ -60,6 +64,10 @@ describe('AuthContext', () => {
     await waitFor(() => expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('true'));
     expect(screen.getByTestId('user')).toHaveTextContent('test@example.com');
     expect(screen.getByTestId('authError')).toHaveTextContent('null');
+    expect(fetch).toHaveBeenCalledWith('/api/check-access', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer test-access-token' },
+    });
   });
 
   it('session + has_access false: isAuthenticated is false, authError is no_subscription', async () => {
@@ -82,6 +90,20 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('isLoadingAuth')).toHaveTextContent('false');
     expect(screen.getByTestId('isPasswordRecovery')).toHaveTextContent('true');
     expect(supabase.auth.getSession).not.toHaveBeenCalled();
+  });
+
+  it('access API failure: exits loading without showing the subscription paywall', async () => {
+    mockSessionWithAccess(supabase);
+    fetch.mockResolvedValue({
+      ok: false,
+      json: vi.fn().mockResolvedValue({ error: 'Unable to verify account access.' }),
+    });
+
+    renderAuth();
+
+    await waitFor(() => expect(screen.getByTestId('authChecked')).toHaveTextContent('true'));
+    expect(screen.getByTestId('isLoadingAuth')).toHaveTextContent('false');
+    expect(screen.getByTestId('authError')).toHaveTextContent('access_check_failed');
   });
 });
 

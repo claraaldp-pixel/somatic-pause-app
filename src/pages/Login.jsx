@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { neonAuth, supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
+import { resetPasswordWithToken } from '@/api/neonPasswordReset';
 import { motion, AnimatePresence } from 'framer-motion';
 import SomaticLogo from "@/components/somatic/SomaticLogo";
 
@@ -83,16 +84,22 @@ export default function Login() {
       setLoading(false);
       return;
     }
-    const { error } = await neonAuth.resetPassword({
-      newPassword,
-      token,
-    });
-    if (error) setError(error.message);
-    else {
-      window.history.replaceState({}, document.title, window.location.pathname);
-      setStep('login');
+    try {
+      await resetPasswordWithToken({ newPassword, token });
+      window.location.replace(window.location.origin);
+    } catch (resetError) {
+      setError(
+        resetError.message === 'Invalid token'
+          ? 'This password reset link is invalid or has expired. Return to sign in and request a new one.'
+          : resetError.message,
+      );
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const leavePasswordRecovery = () => {
+    window.location.replace(window.location.origin);
   };
 
   return (
@@ -274,6 +281,13 @@ export default function Login() {
                   {loading ? 'Saving…' : 'Set password'}
                 </button>
               </form>
+              <button
+                type="button"
+                onClick={leavePasswordRecovery}
+                style={{ display: 'block', margin: '16px auto 0', fontSize: 13, color: '#9d97ac', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Back to sign in
+              </button>
             </motion.div>
           )}
 

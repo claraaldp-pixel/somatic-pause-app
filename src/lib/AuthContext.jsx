@@ -19,17 +19,32 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(isRecoveryUrl());
 
-  const checkAccess = async (supabaseUser) => {
-    const { data } = await supabase.rpc('has_access', {
-      check_user_id: supabaseUser.id,
-      check_email: supabaseUser.email,
-    });
+  const checkAccess = async (session) => {
+    const supabaseUser = session.user;
+    let hasAccess = false;
+
+    try {
+      const response = await fetch('/api/check-access', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Unable to verify account access.');
+      hasAccess = result.hasAccess === true;
+    } catch {
+      setUser(supabaseUser);
+      setIsAuthenticated(false);
+      setAuthError({ type: 'access_check_failed' });
+      setIsLoadingAuth(false);
+      setAuthChecked(true);
+      return;
+    }
 
     // Tag errors with user ID regardless of subscription status — errors on Paywall are also useful
     Sentry.setUser({ id: supabaseUser.id });
     posthog.identify(supabaseUser.id);
 
-    if (data) {
+    if (hasAccess) {
       setUser(supabaseUser);
       setIsAuthenticated(true);
       setAuthError(null);
@@ -51,7 +66,7 @@ export const AuthProvider = ({ children }) => {
     } else {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
-          checkAccess(session.user);
+          checkAccess(session);
         } else {
           setIsLoadingAuth(false);
           setAuthChecked(true);
@@ -67,7 +82,7 @@ export const AuthProvider = ({ children }) => {
         setAuthChecked(true);
       } else if (event === 'SIGNED_IN') {
         setIsPasswordRecovery(false);
-        checkAccess(session.user);
+        checkAccess(session);
       } else if (event === 'SIGNED_OUT') {
         setIsPasswordRecovery(false);
         setUser(null);
@@ -86,7 +101,7 @@ export const AuthProvider = ({ children }) => {
   const checkUserAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      await checkAccess(session.user);
+      await checkAccess(session);
     } else {
       setIsAuthenticated(false);
       setIsLoadingAuth(false);

@@ -13,22 +13,10 @@ export default async function handler(req, res) {
     const [account] = await sql`
       SELECT
         COALESCE(app_user.banned, false) = false
-        AND (
-          EXISTS (
-            SELECT 1
-            FROM public.whitelist AS allowed
-            WHERE lower(allowed.email) = lower(app_user.email)
-          )
-          OR EXISTS (
-            SELECT 1
-            FROM public.subscriptions AS subscription
-            WHERE subscription.user_id = app_user.id
-              AND subscription.status IN ('active', 'trialing')
-              AND (
-                subscription.current_period_end IS NULL
-                OR subscription.current_period_end > now()
-              )
-          )
+        AND EXISTS (
+          SELECT 1
+          FROM public.whitelist AS allowed
+          WHERE lower(allowed.email) = lower(app_user.email)
         ) AS has_access
       FROM neon_auth."user" AS app_user
       WHERE app_user.id = ${tokenUser.sub}::uuid

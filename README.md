@@ -14,21 +14,20 @@ Instead of guessing what you need, users select the physical/emotional symptoms 
 - **Quick start** — jump straight into a state's exercises from the welcome screen, skipping the check-in.
 - **History & pattern insights** — past check-ins and trends over time (`CheckInHistory`, `PatternInsights`).
 - **Favourites** — like individual exercises to relaunch them directly later (`Favourites`).
-- **Subscription management** — trial/renewal info and a "Manage subscription" link to the Stripe Customer Portal, or a complimentary-access message for whitelisted users (`Settings`).
-- **Admin invites** — an admin can invite people by email; this whitelists them and sends a Neon Auth password-setup link (`AdminInvite`, backed by a Vercel function). Admins also manage the exercise video library (`ManageVideos`).
+- **Invite-only access** — there is no public registration or purchase flow. An admin adds each person by email and sends a Neon Auth password-setup link (`AdminInvite`, backed by a Vercel function).
+- **Account settings** — users can change their display name, email, and password. The saved display name is used on the home screen.
+- **Admin tools** — admins can invite people and manage the exercise video library (`ManageVideos`).
 
 ## How it works
 
 - **Frontend** — React 18 + Vite uses Neon Auth and the Neon Data API for check-ins, exercises, and profile data.
-- **Access control** — a `has_access()` Postgres RPC grants access if a user is whitelisted (complimentary access) or has an active/trialing subscription. Row-level security is enabled on `profiles`, `check_ins`, `exercise_videos`, `whitelist`, and `subscriptions`. See [`docs/phase1-handoff.md`](docs/phase1-handoff.md) for the implementation notes.
-- **Payments** — Stripe Checkout (trial signup) and the Stripe Customer Portal, via Vercel server functions.
-- **Monitoring** — Sentry (error tracking) and PostHog (product analytics: session started/completed, paywall/checkout events) are wired in at the app root and are optional locally (no-op if their env vars aren't set).
+- **Access control** — both the server-side access check and the `has_access()` Postgres function require the signed-in user's email to be on the `whitelist`. Row-level security protects user-owned records.
+- **Monitoring** — Sentry (error tracking) and PostHog (product analytics: session started/completed events) are wired in at the app root and are optional locally (no-op if their env vars aren't set).
 
 ## Tech stack
 
 - **Frontend**: React 18, Vite, Tailwind CSS, Radix UI, Framer Motion
 - **Backend**: Neon (Postgres + RLS, managed Auth, Data API) and Vercel functions
-- **Payments**: Stripe Checkout + Customer Portal, via Vercel functions
 - **Monitoring**: Sentry, PostHog
 - **Testing**: Vitest + Testing Library
 
@@ -36,7 +35,7 @@ Instead of guessing what you need, users select the physical/emotional symptoms 
 
 ```bash
 npm install
-cp .env.example .env   # fill in your Neon and Stripe values, see below
+cp .env.example .env   # fill in your Neon values, see below
 npm run dev
 ```
 
@@ -51,12 +50,7 @@ Documented in [`.env.example`](.env.example):
 | `VITE_NEON_AUTH_URL` | Browser-safe Neon Auth base URL |
 | `VITE_NEON_DATA_API_URL` | Browser-safe Neon Data API URL |
 | `VITE_ADMIN_EMAIL` | Email address granted admin access (video management, invites) |
-| `APP_URL` | Canonical app URL used for auth and Stripe redirects |
-| `STRIPE_SECRET_KEY` | Stripe test-mode secret key (server only) |
-| `STRIPE_PRICE_ID` | Stripe test-mode recurring price ID |
-| `STRIPE_WEBHOOK_SECRET` | Stripe signing secret for `/api/stripe-webhook` |
-| `STRIPE_TRIAL_DAYS` | Server-side trial length |
-| `VITE_STRIPE_TRIAL_DAYS` | Trial length displayed in the browser |
+| `APP_URL` | Canonical app URL used for invitation and password-reset links |
 
 Used in the code but **not yet listed** in `.env.example` — both optional for local dev, the app runs fine without them:
 
@@ -64,10 +58,6 @@ Used in the code but **not yet listed** in `.env.example` — both optional for 
 |---|---|
 | `VITE_SENTRY_DSN` | Sentry DSN for error tracking |
 | `VITE_POSTHOG_KEY` | PostHog project key for analytics |
-
-### Stripe setup
-
-Subscriptions run through Stripe Checkout + the Customer Portal via Vercel functions. Stripe should remain in test mode until the full migration is verified.
 
 ## Available scripts
 
@@ -93,7 +83,7 @@ src/
                           # not the live source of truth, see supabase/migrations
   lib/                   # AuthContext, analytics, other shared logic
   api/                   # Neon client (temporary legacy filename)
-api/                     # Vercel functions (Stripe and invites)
+api/                     # Vercel functions (access checks and invites)
 neon/
   migrations/            # database schema + RLS policies
 supabase/                 # legacy source retained during migration

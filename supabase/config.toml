@@ -380,12 +380,6 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
-# Stripe calls this endpoint directly (no Supabase auth header), so it must
-# skip JWT verification. Signature verification is handled in the function
-# itself via STRIPE_WEBHOOK_SECRET.
-[functions.stripe-webhook]
-verify_jwt = false
-
 [analytics]
 enabled = true
 port = 54327

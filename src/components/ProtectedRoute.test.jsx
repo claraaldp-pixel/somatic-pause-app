@@ -7,10 +7,6 @@ vi.mock('@/lib/AuthContext', () => ({
   useAuth: vi.fn(),
 }));
 
-vi.mock('@/components/Paywall', () => ({
-  default: () => <div>Paywall</div>,
-}));
-
 vi.mock('@/components/UserNotRegisteredError', () => ({
   default: () => <div>UserNotRegisteredError</div>,
 }));
@@ -55,15 +51,6 @@ describe('ProtectedRoute', () => {
   it('user not registered: renders UserNotRegisteredError', () => {
     renderRoute({ authError: { type: 'user_not_registered' } });
     expect(screen.getByText('UserNotRegisteredError')).toBeInTheDocument();
-    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
-  });
-
-  it('user with no subscription: renders Paywall', () => {
-    renderRoute({
-      authError: { type: 'no_subscription' },
-      user: { email: 'test@example.com' },
-    });
-    expect(screen.getByText('Paywall')).toBeInTheDocument();
     expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
   });
 

@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    // Tag errors with user ID regardless of subscription status — errors on Paywall are also useful
+    // Keep monitoring associated with the signed-in user even when access is denied.
     Sentry.setUser({ id: supabaseUser.id });
     posthog.identify(supabaseUser.id);
 
@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }) => {
     } else {
       setUser(supabaseUser);
       setIsAuthenticated(false);
-      setAuthError({ type: 'no_subscription' });
+      setAuthError({ type: 'user_not_registered' });
     }
     setIsLoadingAuth(false);
     setAuthChecked(true);

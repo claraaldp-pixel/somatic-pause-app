@@ -10,6 +10,7 @@ import Favourites from "@/components/somatic/Favourites";
 import Settings from "@/components/somatic/Settings";
 import AdminInvite from "@/components/somatic/AdminInvite";
 import AppSidebar from "@/components/somatic/AppSidebar";
+import { getUserDisplayName } from "@/lib/userDisplayName";
 
 export default function Home() {
   const { user, logout } = useAuth();
@@ -108,7 +109,7 @@ export default function Home() {
             <WelcomeBanner
               onStart={() => setPhase("checkin")}
               onQuickStart={handleQuickStart}
-              userName={user?.user_metadata?.full_name || user?.email?.split("@")[0]}
+              userName={getUserDisplayName(user)}
             />
           )}
           {phase === "checkin" && (

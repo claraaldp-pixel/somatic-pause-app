@@ -70,12 +70,12 @@ describe('AuthContext', () => {
     });
   });
 
-  it('session + has_access false: isAuthenticated is false, authError is no_subscription', async () => {
+  it('session + invite-only access false: isAuthenticated is false, authError is user_not_registered', async () => {
     mockSessionNoAccess(supabase);
     renderAuth();
     await waitFor(() => expect(screen.getByTestId('authChecked')).toHaveTextContent('true'));
     expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('false');
-    expect(screen.getByTestId('authError')).toHaveTextContent('no_subscription');
+    expect(screen.getByTestId('authError')).toHaveTextContent('user_not_registered');
   });
 
   it('password recovery token: stops loading and shows the recovery flow', async () => {
@@ -92,7 +92,7 @@ describe('AuthContext', () => {
     expect(supabase.auth.getSession).not.toHaveBeenCalled();
   });
 
-  it('access API failure: exits loading without showing the subscription paywall', async () => {
+  it('access API failure: exits loading without showing the access-denied screen', async () => {
     mockSessionWithAccess(supabase);
     fetch.mockResolvedValue({
       ok: false,
@@ -116,7 +116,7 @@ describe('Sentry user context', () => {
     );
   });
 
-  it('sets Sentry user id when access is denied (no_subscription)', async () => {
+  it('sets Sentry user id when invite-only access is denied', async () => {
     mockSessionNoAccess(supabase);
     renderAuth();
     await waitFor(() =>

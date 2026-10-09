@@ -3,9 +3,6 @@ import posthog from 'posthog-js';
 const enabled = () => posthog.__loaded;
 
 export const analytics = {
-  paywallViewed:     () => enabled() && posthog.capture('paywall_viewed'),
-  checkoutStarted:   () => enabled() && posthog.capture('checkout_started'),
-  checkoutCompleted: () => enabled() && posthog.capture('checkout_completed'),
   sessionStarted:    (survivalState, trigger) =>
     enabled() && posthog.capture('session_started', { survival_state: survivalState, trigger }),
   sessionCompleted:  (survivalState, preScore, postScore, exercisesCount) =>
